@@ -1,0 +1,49 @@
+{
+  "config": {
+    "tax": 5,
+    "discount": 0,
+    "promo": "",
+    "customBg": "",
+    "customCursor": "",
+    "customFont": "",
+    "useWebUSB": false
+  },
+  "menu": [
+    {
+      "name": "Ice Coffee",
+      "price": 2500,
+      "cat": "Drinks",
+      "code": "DC01",
+      "img": "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400"
+    },
+    {
+      "name": "Croissant",
+      "price": 1500,
+      "cat": "Bakery",
+      "code": "BK01",
+      "img": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400"
+    },
+    {
+      "name": "Chocolate Cake",
+      "price": 15000,
+      "cat": "Cakes",
+      "code": "CK01",
+      "img": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400"
+    }
+  ],
+  "tables": [
+    "Table 1",
+    "Table 2",
+    "Table 3",
+    "Table 4",
+    "Takeaway"
+  ],
+  "sales": [],
+  "tabs": {},
+  "queue": [],
+  "tracker": {
+    "date": "3/18/2026",
+    "count": 0
+  },
+  "shifts": []
+}

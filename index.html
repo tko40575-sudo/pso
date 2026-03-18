@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Good Cool & Bakery POS | Master Build v11</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6M1qoVpm3Tn8Ro3V5pq9cRzJk49UoFTw",
+            authDomain: "elite-bdc5b.firebaseapp.com",
+            projectId: "elite-bdc5b",
+            storageBucket: "elite-bdc5b.firebasestorage.app",
+            messagingSenderId: "549825935713",
+            appId: "1:549825935713:web:c6b8324323b7113806ed20"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        window.fbSetDoc = setDoc;
+        window.fbDoc = doc;
+        window.fbOnSnapshot = onSnapshot;
+        
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); background-attachment: fixed; color: #1e293b; transition: background 0.5s ease; }
+        .glass-panel { background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); }
+        .glass-button { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.8); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-button:hover { background: rgba(255, 255, 255, 0.9); box-shadow: 0 10px 25px rgba(14, 165, 233, 0.2); transform: translateY(-3px) scale(1.02); z-index: 10; cursor: pointer; }
+        .glass-button:active { transform: translateY(1px) scale(0.97); }
+
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.9) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideRight { 0% { opacity: 0; transform: translateX(-20px); } 100% { opacity: 1; transform: translateX(0); } }
+        .animate-slide-right { animation: slideRight 0.3s ease-out forwards; }
+
+        .hidden { display: none !important; pointer-events: none !important; }
+
+        #loader-layer { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s ease; pointer-events: none; }
+        .loader { width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(45deg, transparent, transparent 40%, #e5f403); animation: animate 2s linear infinite; position: relative; }
+        .loader:before { content: ''; position: absolute; inset: 6px; background: #000; border-radius: 50%; z-index: 1000; }
+        .loader:after { content: ''; position: absolute; inset: 0px; background: linear-gradient(45deg, transparent, transparent 40%, #e5f403); border-radius: 50%; z-index: 1; filter: blur(30px); }
+        @keyframes animate { 0% { transform: rotate(0deg); filter: hue-rotate(0deg); } 100% { transform: rotate(360deg); filter: hue-rotate(360deg); } }
+
+        #login-layer { position: fixed; inset: 0; background: linear-gradient(#141e30, #243b55); z-index: 100; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); display: flex; align-items: center; justify-content: center;}
+        .login-box { width: 90%; max-width: 400px; padding: 40px; background: rgba(0,0,0,.7); box-sizing: border-box; box-shadow: 0 15px 25px rgba(0,0,0,.6); border-radius: 15px; }
+        .login-box h2 { margin: 0 0 10px; padding: 0; color: #fff; text-align: center; font-size: 24px; font-weight: bold;}
+        .login-box p { margin: 0 0 20px; color: #8ec5fc; text-align: center; font-size: 14px;}
+        
+        /* Pattern Lock CSS */
+        #pattern-lock { touch-action: none; position: relative; width: 240px; height: 240px; margin: 0 auto; user-select: none; }
+        .pattern-dot { width: 16px; height: 16px; background: #475569; border-radius: 50%; margin: auto; position: relative; transition: all 0.2s ease; z-index: 10; }
+        .pattern-dot::before { content: ''; position: absolute; top: -25px; left: -25px; right: -25px; bottom: -25px; border-radius: 50%; }
+        .pattern-dot.active { background: #03e9f4; box-shadow: 0 0 15px #03e9f4; transform: scale(1.4); }
+        .pattern-dot.error { background: #ef4444; box-shadow: 0 0 15px #ef4444; }
+
+        .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; cursor: pointer; color: #475569; font-weight: 600; text-decoration: none; }
+        .sidebar-link:hover { background: rgba(255, 255, 255, 0.5); color: #0284c7; transform: translateX(5px); }
+        .active-link { background: #0ea5e9 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); transform: translateX(5px); }
+        
+        /* 📱 Mobile Table-Side Drawer CSS */
+        @media (max-width: 1024px) {
+            #receipt-area { display: none; } 
+            #receipt-area.mobile-open { display: flex !important; position: fixed; inset: 0; z-index: 999; height: 100vh; border-radius: 0; }
+            #close-mobile-cart { display: block !important; }
+        }
+
+        @media print {
+            @page { margin: 0; size: 80mm auto; }
+            body.printing-mode > *:not(#print-host-container) { display: none !important; }
+            body { background: white !important; font-family: 'Courier New', Courier, monospace !important; color: black !important; margin: 0; padding: 0; }
+            #print-host-container { display: block !important; position: relative !important; width: 100%; max-width: 80mm; margin: 0; padding: 10px !important; background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+            .print-item-row { display: flex !important; }
+        }
+        
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body class="overflow-x-hidden h-screen flex flex-col md:flex-row">
+
+    <style id="custom-styling-block"></style>
+
+    <audio id="sfx-click" src="https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3" preload="auto"></audio>
+    <audio id="sfx-success" src="https://assets.mixkit.co/sfx/download/mixkit-cash-register-purchase-87.wav" preload="auto"></audio>
+    <audio id="sfx-delete" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" preload="auto"></audio>
+
+    <div id="loader-layer"><div class="loader"></div></div>
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[99999] flex flex-col gap-3 pointer-events-none"></div>
+
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-opacity duration-300 opacity-0">
+        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-transform duration-300 scale-95" id="confirm-box">
+            <div id="confirm-icon-container" class="flex items-center justify-center w-16 h-16 rounded-full mx-auto mb-4">
+                <svg id="confirm-icon" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800 mb-2 text-center" id="confirm-title">Are you sure?</h3>
+            <p class="text-slate-600 text-center font-medium mb-8 text-sm" id="confirm-message">This action cannot be undone.</p>
+            <div class="flex gap-3">
+                <button type="button" id="confirm-btn-cancel" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
+                <button type="button" id="confirm-btn-ok" class="flex-1 text-white font-bold py-3 rounded-xl transition active:scale-95 shadow-lg">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-overlay" class="fixed inset-0 z-[300] bg-gradient-to-br from-sky-400 to-indigo-600 flex flex-col items-center justify-center transition-all duration-500 opacity-0 pointer-events-none transform scale-110">
+        <div class="text-white text-8xl mb-6 animate-bounce">🖨️</div>
+        <h2 class="text-5xl font-black text-white tracking-widest drop-shadow-lg text-center" id="overlay-text">PRINTING...</h2>
+    </div>
+
+    <div id="login-layer">
+        <button onclick="document.getElementById('login-help').classList.toggle('hidden'); playClick();" class="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white font-bold hover:bg-white/20 transition-all z-[101]">?</button>
+        
+        <div id="login-help" class="hidden absolute top-20 right-6 bg-slate-900/80 backdrop-blur-md p-5 rounded-2xl border border-white/20 text-white shadow-2xl transition-all z-[101] animate-pop-in">
+            <h4 class="font-black text-sky-400 mb-3 uppercase tracking-widest text-sm border-b border-white/20 pb-2">Unlock Patterns</h4>
+            <ul class="space-y-3 text-sm font-bold text-slate-200">
+                <li class="flex items-center gap-3"><span class="text-sky-400 font-black text-xl w-6 text-center">U</span> Draw 'U' (or press U)</li>
+                <li class="flex items-center gap-3"><span class="text-emerald-400 font-black text-xl w-6 text-center">Z</span> Draw 'Z' (or press Z)</li>
+                <li class="flex items-center gap-3"><span class="text-amber-400 font-black text-xl w-6 text-center">L</span> Draw 'L' (or press L)</li>
+            </ul>
+        </div>
+
+        <div class="login-box animate-pop-in relative z-100">
+            <h2>System Login</h2>
+            <p>Draw pattern or use quick keys to unlock</p>
+            
+            <div id="pattern-lock">
+                <svg id="pattern-lines" class="absolute inset-0 w-full h-full pointer-events-none z-0"></svg>
+                <div class="grid grid-cols-3 gap-0 w-full h-full relative z-10">
+                    <div class="pattern-dot flex" data-id="1"></div>
+                    <div class="pattern-dot flex" data-id="2"></div>
+                    <div class="pattern-dot flex" data-id="3"></div>
+                    <div class="pattern-dot flex" data-id="4"></div>
+                    <div class="pattern-dot flex" data-id="5"></div>
+                    <div class="pattern-dot flex" data-id="6"></div>
+                    <div class="pattern-dot flex" data-id="7"></div>
+                    <div class="pattern-dot flex" data-id="8"></div>
+                    <div class="pattern-dot flex" data-id="9"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="md:hidden glass-panel m-4 rounded-2xl p-4 flex justify-between items-center z-50">
+        <h1 class="text-xl font-black text-slate-800 tracking-wider">GOOD COOL <span class="text-sky-600">POS</span></h1>
+        <button onclick="toggleMobileMenu()" class="text-slate-800 focus:outline-none transform transition active:scale-90">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out w-64 glass-panel flex flex-col no-print z-40 m-4 rounded-3xl h-[calc(100vh-2rem)]">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-1">
+                <h1 class="text-2xl font-black text-slate-800 tracking-wider hidden md:block">GOOD COOL</h1>
+            </div>
+            <p class="text-xs text-slate-500 mb-8 hidden md:block font-bold" id="edition-label">Edition</p>
+            
+            <nav class="space-y-2 mt-8 md:mt-0">
+                <div onclick="showPage('tables'); playClick()" id="link-tables" class="sidebar-link active-link"><span>🪑</span> <span>Floor Plan</span></div>
+                <div onclick="showPage('pos'); playClick()" id="link-pos" class="sidebar-link"><span>🛒</span> <span>Terminal</span></div>
+                <div onclick="showPage('queue'); playClick()" id="link-queue" class="sidebar-link"><span>🎫</span> <span>Live Queue</span></div>
+                <div onclick="showPage('work'); playClick()" id="link-work" class="sidebar-link"><span>👥</span> <span>Workspace</span></div>
+                <div onclick="showPage('dashboard'); playClick()" id="link-dashboard" class="sidebar-link"><span>📊</span> <span>Dashboard</span></div>
+                <div onclick="showPage('menu'); playClick()" id="link-menu" class="sidebar-link"><span>📋</span> <span>Menu</span></div>
+                <div onclick="showPage('settings'); playClick()" id="link-settings" class="sidebar-link"><span>⚙️</span> <span>Settings</span></div>
+            </nav>
+        </div>
+        <div class="mt-auto p-6 border-t border-white/40">
+            <button onclick="location.reload()" class="w-full py-3 bg-red-500/20 text-red-600 font-bold rounded-xl hover:bg-red-500 hover:text-white transition-all transform active:scale-95">Log Out</button>
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto p-4 pt-0 md:pt-4 relative">
+        
+        <section id="page-tables" class="pb-20 md:pb-0 animate-slide-right">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 glass-panel p-6 rounded-3xl">
+                <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Select Table to Order</h2>
+                <div class="flex gap-2 w-full md:w-auto" id="add-table-controls">
+                    <input type="text" id="new-table-name" placeholder="e.g. VIP 1" class="flex-1 md:w-64 p-3 glass-button rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-bold">
+                    <button type="button" onclick="addTable(); playClick()" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-700 transition transform active:scale-95 shadow-lg">Add</button>
+                </div>
+            </div>
+            <div id="manager-table-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
+        </section>
+
+        <section id="page-pos" class="hidden flex-col lg:flex-row gap-6 h-full pb-20 md:pb-0 animate-slide-right">
+            <div class="lg:w-2/3 flex flex-col h-full">
+                <div class="flex flex-col mb-6 glass-panel p-4 rounded-2xl gap-4">
+                    <div class="flex justify-between items-center w-full">
+                        <h2 class="text-2xl font-bold text-slate-800" id="pos-header-title">Categories</h2>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <span id="cloud-status" class="text-xs bg-emerald-500/20 text-emerald-700 font-bold px-2 py-1 rounded hidden">☁️ Synced</span>
+                            <label class="font-bold text-slate-600">Table:</label>
+                            <select id="pos-table-select" onchange="switchTable(this.value)" class="glass-button p-2 px-4 rounded-xl font-bold outline-none cursor-pointer"></select>
+                        </div>
+                    </div>
+                    <div class="relative w-full">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                        <input type="text" id="pos-search" oninput="handleSearch()" placeholder="Search by name or code..." class="w-full py-3 pl-10 pr-4 glass-button rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-medium">
+                    </div>
+                </div>
+                <div id="pos-menu-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pb-4 pr-2"></div>
+            </div>
+
+            <button id="mobile-cart-toggle" onclick="toggleMobileCart()" class="lg:hidden fixed bottom-6 right-6 bg-slate-800 text-white rounded-2xl p-4 shadow-2xl z-40 border-2 border-white/20 transform transition active:scale-90 flex items-center gap-2">
+                <span class="text-xl">🛒</span> <span id="mobile-cart-count" class="font-black bg-sky-500 px-2 py-1 rounded-lg text-sm">0</span>
+            </button>
+
+            <div class="lg:w-1/3 glass-panel rounded-3xl flex flex-col h-[600px] lg:h-[calc(100vh-2rem)] p-6 transition-transform duration-300" id="receipt-area" style="background: white;">
+                <button type="button" id="close-mobile-cart" onclick="toggleMobileCart()" class="hidden absolute top-4 right-4 bg-slate-200 text-slate-800 w-10 h-10 rounded-full font-bold text-xl active:scale-90 transition">×</button>
+                
+                <div class="text-center pb-4 mb-4 border-b border-slate-400 print:border-b print:border-dashed print:border-black mt-4 lg:mt-0" style="font-family: 'Courier New', Courier, monospace;">
+                    <h2 class="font-black text-2xl text-slate-900 tracking-tighter uppercase mb-1">GOOD COOL<br>& BAKERY</h2>
+                    <p class="text-xs text-slate-800 font-bold">Nay Pyi Taw, Pyinmana</p>
+                    <p class="text-[11px] text-slate-800 mt-2 font-semibold">Tel: 09-43158093</p>
+                    <div class="mt-3 pt-2 border-t border-slate-400 print:border-t print:border-dashed print:border-black flex flex-col justify-center items-center">
+                        <p class="text-xs text-slate-600 font-bold" id="receipt-date"></p>
+                        <p class="text-sm font-black text-slate-900 mt-1 uppercase tracking-widest flex items-center justify-center gap-2">
+                            TABLE: <span id="receipt-table-display"></span>
+                        </p>
+                        <p class="text-lg font-black text-slate-900 mt-1 print-item-row hidden justify-center w-full" id="receipt-order-no"></p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between w-full text-xs font-bold border-b border-slate-400 print:border-dashed print:border-black pb-1 mb-2" style="font-family: 'Courier New', Courier, monospace;">
+                    <span class="w-1/2 text-left">ITEM</span>
+                    <span class="w-1/4 text-center">QTY</span>
+                    <span class="w-1/4 text-right">PRICE</span>
+                </div>
+
+                <div id="cart-list" class="flex-1 overflow-y-auto space-y-2 mb-4 pr-2" style="font-family: 'Courier New', Courier, monospace;"></div>
+                
+                <div class="pt-4 space-y-2 text-sm border-t border-slate-400 print:border-t print:border-dashed print:border-black" style="font-family: 'Courier New', Courier, monospace;">
+                    <div class="flex justify-between font-semibold text-slate-800">
+                        <span>Subtotal:</span>
+                        <span><span id="subtotal">0</span> Ks</span>
+                    </div>
+                    
+                    <div class="flex justify-between font-semibold text-red-500" id="discount-row" style="display:none;">
+                        <div><span>Discount</span> (<span id="disc-percent">0</span>%):</div>
+                        <span>-<span id="disc-amt">0</span> Ks</span>
+                    </div>
+                    
+                    <div class="flex justify-between font-semibold text-slate-800 pb-2 border-b border-slate-400 print:border-b print:border-dashed print:border-black">
+                        <div>Tax (<span id="tax-percent">5</span>%):</div>
+                        <span><span id="tax-amt">0</span> Ks</span>
+                    </div>
+                    
+                    <div class="flex justify-between text-xl font-black pt-2 text-slate-900">
+                        <span>TOTAL:</span>
+                        <span><span id="grand-total">0</span> Ks</span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-4 w-full pb-8 lg:pb-0">
+                    <button type="button" onclick="printKOT()" class="no-print flex-1 bg-amber-500 text-white py-4 rounded-xl font-black text-sm hover:bg-amber-400 shadow-lg transition-all transform active:scale-95 font-sans">🍳 KOT</button>
+                    <button type="button" onclick="saveOrder()" class="no-print flex-1 bg-emerald-500 text-white py-4 rounded-xl font-black text-sm hover:bg-emerald-400 shadow-lg transition-all transform active:scale-95 font-sans">💾 SAVE</button>
+                    <button type="button" onclick="processOrder()" class="no-print flex-[2] bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-4 rounded-xl font-black text-lg hover:opacity-90 shadow-lg transition-all transform active:scale-95 font-sans">🖨️ PAY</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-queue" class="hidden pb-20 md:pb-0 animate-slide-right h-full flex-col">
+            <div class="flex justify-between items-center mb-6 glass-panel p-6 rounded-3xl">
+                <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Live Order Queue</h2>
+                <button type="button" onclick="clearQueue()" id="btn-clear-queue" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-700 hidden">Reset Queue</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+                <div class="glass-panel p-6 rounded-3xl flex flex-col border-t-8 border-t-amber-400">
+                    <h3 class="text-2xl font-black text-slate-800 mb-4 text-center">Preparing 🍳</h3>
+                    <div id="queue-preparing" class="flex-1 overflow-y-auto space-y-3"></div>
+                </div>
+                <div class="glass-panel p-6 rounded-3xl flex flex-col border-t-8 border-t-emerald-400">
+                    <h3 class="text-2xl font-black text-slate-800 mb-4 text-center">Ready for Pickup ✅</h3>
+                    <div id="queue-ready" class="flex-1 overflow-y-auto space-y-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-work" class="hidden pb-20 md:pb-0 animate-slide-right">
+            <div class="flex justify-between items-center mb-6 glass-panel p-6 rounded-3xl">
+                <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Staff Workspace</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="glass-panel p-6 rounded-3xl col-span-1 flex flex-col items-center justify-center border-t-8 border-t-sky-400">
+                    <div class="w-24 h-24 bg-sky-100 rounded-full flex items-center justify-center text-5xl mb-4">👤</div>
+                    <h3 class="text-2xl font-black text-slate-800" id="work-user-name">User</h3>
+                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm mb-6" id="work-user-role">Role</p>
+                    
+                    <button type="button" id="btn-timeclock" onclick="toggleShift()" class="w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-emerald-500 hover:bg-emerald-400">
+                        CLOCK IN
+                    </button>
+                    <p id="work-status" class="text-slate-500 font-bold mt-2 text-sm">Status: CLOCKED OUT</p>
+                </div>
+                
+                <div class="glass-panel p-6 rounded-3xl col-span-1 md:col-span-2">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-bold text-xl text-slate-800">Recent Shift Logs</h4>
+                    </div>
+                    <div class="overflow-x-auto h-64">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-slate-500 text-sm uppercase tracking-wider border-b border-white/40">
+                                    <th class="p-4">Staff Member</th>
+                                    <th class="p-4">Clocked In</th>
+                                    <th class="p-4">Clocked Out</th>
+                                </tr>
+                            </thead>
+                            <tbody id="work-logs" class="divide-y divide-white/30"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-dashboard" class="hidden pb-20 md:pb-0 animate-slide-right h-full flex-col">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 glass-panel p-6 rounded-3xl gap-4">
+                <div class="text-center sm:text-left">
+                    <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Sales Overview</h2>
+                    <p class="text-sm font-bold text-slate-500 mt-1">Real-time revenue tracking</p>
+                </div>
+                <button type="button" onclick="exportToExcel()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2">📊 Export CSV</button>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
+                <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl transition-all group-hover:bg-emerald-400/40"></div>
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Today's Revenue</p>
+                        <span class="text-2xl drop-shadow-sm">💰</span>
+                    </div>
+                    <h3 class="text-3xl xl:text-4xl font-black text-slate-800 tracking-tight"><span id="dash-rev-today">0</span> <span class="text-lg text-emerald-600">Ks</span></h3>
+                </div>
+                <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-sky-400/20 rounded-full blur-2xl transition-all group-hover:bg-sky-400/40"></div>
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">7-Day Revenue</p>
+                        <span class="text-2xl drop-shadow-sm">📈</span>
+                    </div>
+                    <h3 class="text-3xl xl:text-4xl font-black text-slate-800 tracking-tight"><span id="dash-rev-week">0</span> <span class="text-lg text-sky-600">Ks</span></h3>
+                </div>
+                <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-400/20 rounded-full blur-2xl transition-all group-hover:bg-purple-400/40"></div>
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">30-Day Revenue</p>
+                        <span class="text-2xl drop-shadow-sm">🏆</span>
+                    </div>
+                    <h3 class="text-3xl xl:text-4xl font-black text-slate-800 tracking-tight"><span id="dash-rev-month">0</span> <span class="text-lg text-purple-600">Ks</span></h3>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl mb-4 shadow-xl border border-white/60 bg-white/30 backdrop-blur-md">
+                <canvas id="salesChart" height="80"></canvas>
+            </div>
+            
+            <div class="glass-panel p-0 rounded-3xl overflow-hidden flex-1 flex flex-col border border-white/60 shadow-xl">
+                <div class="bg-white/40 p-6 border-b border-white/50 flex justify-between items-center">
+                    <h4 class="font-black text-xl text-slate-800">Recent Transactions</h4>
+                    <span class="text-[10px] sm:text-xs font-bold bg-white/60 text-slate-600 px-3 py-1 rounded-full border border-white/80 whitespace-nowrap">Last 50 orders</span>
+                </div>
+                <div class="overflow-x-auto flex-1 p-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-200/50">
+                                <th class="p-4 font-bold">Time & Date</th>
+                                <th class="p-4 font-bold">Details</th>
+                                <th class="p-4 font-bold hidden md:table-cell">Items</th>
+                                <th class="p-4 font-bold">Amount</th>
+                                <th class="p-4 font-bold text-right">Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-history" class="divide-y divide-slate-200/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-menu" class="hidden pb-20 md:pb-0 animate-slide-right">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-4 mb-8 glass-panel p-6 rounded-3xl">
+                <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm whitespace-nowrap">Menu Manager</h2>
+                <div class="flex flex-col sm:flex-row w-full lg:w-auto gap-4 flex-1 lg:justify-end lg:ml-8">
+                    <div class="relative w-full sm:max-w-md">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                        <input type="text" id="menu-manager-search" oninput="renderMenuManager()" placeholder="Search..." class="w-full py-3 pl-10 pr-4 glass-button rounded-xl outline-none focus:ring-2 focus:ring-sky-400">
+                    </div>
+                    <button type="button" onclick="openMenuModal(); playClick()" class="w-full sm:w-auto whitespace-nowrap bg-sky-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-sky-400 transition">+ Add Item</button>
+                </div>
+            </div>
+            <div id="manager-menu-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <section id="page-settings" class="hidden pb-20 md:pb-0 animate-slide-right">
+            <div class="p-8 max-w-3xl mx-auto mt-4">
+                <h2 class="text-3xl font-black text-slate-800 mb-8 text-center drop-shadow-sm">Settings</h2>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                        <h4 class="font-bold text-slate-800 text-base">Tax Rate (%)</h4>
+                        <input type="number" id="config-tax" class="w-24 py-2 px-4 bg-white rounded-xl outline-none text-center font-bold text-slate-800 shadow-inner">
+                    </div>
+
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                        <h4 class="font-bold text-slate-800 text-base">Global Discount (%)</h4>
+                        <input type="number" id="config-discount" class="w-24 py-2 px-4 bg-white rounded-xl outline-none text-center font-bold text-red-500 shadow-inner">
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                        <h4 class="font-bold text-slate-800 text-base">Promotion Text</h4>
+                        <input type="text" id="config-promo" class="w-48 py-2 px-4 bg-white rounded-xl outline-none text-center font-bold text-sky-700 shadow-inner">
+                    </div>
+
+                    <div class="flex justify-between items-center bg-emerald-50 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-emerald-200">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">⚡ Enable WebUSB Printing</h4>
+                            <p class="text-xs text-slate-500 mt-1">Instant ESC/POS printing (Requires Chrome/Edge & HTTPS)</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" id="config-webusb" class="sr-only peer">
+                          <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Custom Background Video/Image URL</h4>
+                            <p class="text-xs text-slate-500 mt-1">Supports .mp4 links or static images</p>
+                        </div>
+                        <input type="text" id="config-bg" placeholder="https://..." class="w-56 py-2 px-4 bg-white rounded-xl outline-none text-xs text-slate-700 shadow-inner">
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Custom Mouse Cursor URL</h4>
+                            <p class="text-xs text-slate-500 mt-1">Must be a .png or .cur link</p>
+                        </div>
+                        <input type="text" id="config-cursor" placeholder="https://..." class="w-56 py-2 px-4 bg-white rounded-xl outline-none text-xs text-slate-700 shadow-inner">
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Custom System Font</h4>
+                            <p class="text-xs text-slate-500 mt-1">Enter a Google Font name (e.g., 'Poppins', 'Space Mono')</p>
+                        </div>
+                        <input type="text" id="config-font" placeholder="e.g. Quicksand" class="w-56 py-2 px-4 bg-white rounded-xl outline-none text-sm font-bold text-slate-800 shadow-inner">
+                    </div>
+
+                    <button type="button" onclick="saveSettings(); playSuccess()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-black text-xl hover:bg-slate-700 transition active:scale-95 shadow-md mt-4">SAVE SETTINGS</button>
+
+                    <h3 class="text-xl font-black text-slate-800 mt-8 mb-4 border-b border-slate-300 pb-2">Advanced Tools</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button type="button" onclick="printZReport()" class="bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-500 shadow active:scale-95">🌙 Print Z-Report</button>
+                        <button type="button" onclick="backupDB()" class="bg-emerald-600 text-white p-4 rounded-xl font-bold hover:bg-emerald-500 shadow active:scale-95">💾 Backup DB</button>
+                        <div class="relative">
+                            <input type="file" id="import-db-file" onchange="restoreDB(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".json">
+                            <button type="button" class="w-full bg-amber-500 text-white p-4 rounded-xl font-bold hover:bg-amber-400 shadow active:scale-95">📂 Restore DB</button>
+                        </div>
+                        <button type="button" id="btn-factory-reset" onclick="clearSalesHistory()" class="bg-red-600 text-white p-4 rounded-xl font-bold hover:bg-red-500 shadow active:scale-95 hidden">⚠️ Factory Reset</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="kot-print-area" class="hidden" style="background:white; color:black; font-family:'Courier New', monospace; padding:20px; width:100%; max-width:80mm;">
+            <h2 class="text-center font-black text-2xl border-b border-dashed border-black pb-2 mb-4">KITCHEN ORDER</h2>
+            <p class="text-sm font-bold text-center mb-1">TABLE: <span id="kot-table"></span></p>
+            <p class="text-xs text-center mb-4" id="kot-date"></p>
+            <div class="space-y-4 text-lg font-bold border-b border-dashed border-black pb-4 mb-4" id="kot-items"></div>
+            <p class="text-center text-xs italic">*** END OF TICKET ***</p>
+        </div>
+
+        <div id="z-report-area" class="hidden" style="background:white; color:black; font-family:'Courier New', monospace; padding:20px; width:100%; max-width:80mm;">
+            <h2 class="text-center font-black text-xl border-b border-dashed border-black pb-2 mb-4">END OF DAY Z-REPORT</h2>
+            <p class="text-xs text-center mb-4" id="z-report-date"></p>
+            <div class="space-y-2 text-sm border-b border-dashed border-black pb-4 mb-4" id="z-report-stats"></div>
+            <p class="text-center text-xs italic">System Closed.</p>
+        </div>
+
+        <div id="reprint-area" class="hidden" style="background:white; color:black; font-family:'Courier New', monospace; padding:20px; width:100%; max-width:80mm;">
+            <div class="text-center pb-4 mb-4 border-b border-dashed border-black">
+                <h2 class="font-black text-2xl tracking-tighter uppercase mb-1">GOOD COOL<br>& BAKERY</h2>
+                <p class="text-xs font-bold">Nay Pyi Taw, Pyinmana</p>
+                <div class="mt-3 pt-2 border-t border-dashed border-black flex flex-col justify-center items-center">
+                    <p class="text-xs font-bold" id="reprint-date"></p>
+                    <p class="text-sm font-black mt-1 uppercase tracking-widest">TABLE: <span id="reprint-table"></span></p>
+                    <p class="text-lg font-black mt-1" id="reprint-order-no"></p>
+                    <p class="text-xs font-bold mt-2 text-slate-500 bg-slate-200 px-2 py-1 rounded">*** REPRINT ***</p>
+                </div>
+            </div>
+            <div class="flex justify-between w-full text-xs font-bold border-b border-dashed border-black pb-1 mb-2">
+                <span class="w-1/2 text-left">ITEM</span><span class="w-1/4 text-center">QTY</span><span class="w-1/4 text-right">PRICE</span>
+            </div>
+            <div id="reprint-items" class="mb-4"></div>
+            <div class="pt-4 space-y-2 text-sm border-t border-dashed border-black" id="reprint-totals"></div>
+        </div>
+    </main>
+
+    <div id="menu-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[200] p-4 transition-opacity">
+        <div class="glass-panel bg-white/80 p-8 rounded-3xl w-full max-w-md shadow-2xl transform transition-all animate-pop-in">
+            <h3 class="text-2xl font-black text-slate-800 mb-6" id="modal-title">Add Menu Item</h3>
+            <input type="hidden" id="edit-index">
+            <div class="space-y-3">
+                <div class="flex gap-2">
+                    <div class="w-2/3"><label class="text-sm font-bold text-slate-600 ml-1">Item Name</label><input type="text" id="menu-name" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
+                    <div class="w-1/3"><label class="text-sm font-bold text-slate-600 ml-1">Price</label><input type="number" id="menu-price" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
+                </div>
+                <div><label class="text-sm font-bold text-slate-600 ml-1">Image URL</label><input type="text" id="menu-img" placeholder="https://..." class="w-full p-3 mt-1 glass-button rounded-xl outline-none text-sm"></div>
+                <div><label class="text-sm font-bold text-slate-600 ml-1">Product Code</label><input type="text" id="menu-code" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
+                <div class="flex gap-2">
+                    <div class="w-1/2"><label class="text-sm font-bold text-slate-600 ml-1">Category</label><input type="text" id="menu-cat" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
+                    <div class="w-1/2"><label class="text-sm font-bold text-slate-600 ml-1">Sub-Cat</label><input type="text" id="menu-subcat" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
+                </div>
+                <div class="flex gap-3 pt-4 border-t border-slate-200/50 mt-4">
+                    <button type="button" onclick="closeMenuModal(); playClick()" class="flex-1 bg-white/50 text-slate-700 font-bold py-3 rounded-xl hover:bg-white/80 transition active:scale-95">Cancel</button>
+                    <button type="button" onclick="saveMenuItem(); playClick()" class="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl hover:bg-sky-400 transition active:scale-95">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="transfer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[200] p-4 transition-opacity">
+        <div class="glass-panel bg-white/80 p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all animate-pop-in">
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Transfer Table</h3>
+            <p class="text-slate-600 text-sm mb-6 font-bold">Moving from: <span id="transfer-from-name" class="text-sky-600"></span></p>
+            <label class="text-sm font-bold text-slate-600 ml-1">Select Destination:</label>
+            <select id="transfer-to-select" class="w-full p-3 mt-1 mb-6 glass-button rounded-xl outline-none font-bold text-slate-700 cursor-pointer"></select>
+            <div class="flex gap-3 pt-4 border-t border-slate-200/50">
+                <button type="button" onclick="closeTransferModal(); playClick()" class="flex-1 bg-white/50 text-slate-700 font-bold py-3 rounded-xl hover:bg-white/80 transition active:scale-95">Cancel</button>
+                <button type="button" onclick="executeTransfer(); playClick()" class="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl hover:bg-sky-400 transition active:scale-95">Move Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserRole = 'guest';
+        let currentUsername = 'Guest';
+        
+        let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false };
+        
+        let menu = JSON.parse(localStorage.getItem('tino_menu')) || [ 
+            { name: "Ice Coffee", price: 2500, cat: "Drinks", code: "DC01", img: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400" },
+            { name: "Croissant", price: 1500, cat: "Bakery", code: "BK01", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400" },
+            { name: "Chocolate Cake", price: 15000, cat: "Cakes", code: "CK01", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400" }
+        ];
+        
+        let tables = JSON.parse(localStorage.getItem('tino_tables')) || ['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Takeaway'];
+        let sales = JSON.parse(localStorage.getItem('tino_sales')) || [];
+        let openTabs = JSON.parse(localStorage.getItem('tino_tabs')) || {}; 
+        
+        let queueList = JSON.parse(localStorage.getItem('tino_queue')) || [];
+        let dailyTracker = JSON.parse(localStorage.getItem('tino_tracker')) || { date: new Date().toLocaleDateString(), count: 0 };
+        let shiftLogs = JSON.parse(localStorage.getItem('tino_shifts')) || [];
+        
+        let activeTable = tables[0];
+        let currentCat = null; let currentSubcat = null;
+        let isSyncingFromCloud = false;
+        let salesChartInstance = null;
+
+        window.addEventListener('firebase-ready', () => { console.log("🔥 Firebase initialized."); });
+
+        // 🍞 Beautiful Toast Notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const icon = type === 'error' ? '❌' : type === 'info' ? 'ℹ️' : '✅';
+            const bg = type === 'error' ? 'bg-red-500' : type === 'info' ? 'bg-sky-500' : 'bg-emerald-500';
+            
+            toast.className = `${bg} text-white px-6 py-4 rounded-2xl shadow-2xl font-bold flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `<span class="text-2xl">${icon}</span> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000); // Disappears after 3 seconds
+        }
+
+        // 🛑 Promise-Based Custom Confirm Modal
+        function customConfirm(message, title = "Confirm Action", confirmText = "Confirm", type = "danger") {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirm-modal');
+                const box = document.getElementById('confirm-box');
+                const iconContainer = document.getElementById('confirm-icon-container');
+                const icon = document.getElementById('confirm-icon');
+                
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-message').innerText = message;
+                
+                const btnOk = document.getElementById('confirm-btn-ok');
+                btnOk.innerText = confirmText;
+                
+                if (type === "danger") {
+                    btnOk.className = "flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition active:scale-95 shadow-lg shadow-red-500/30";
+                    iconContainer.className = "flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mx-auto mb-4";
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>';
+                } else {
+                    btnOk.className = "flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl hover:bg-sky-600 transition active:scale-95 shadow-lg shadow-sky-500/30";
+                    iconContainer.className = "flex items-center justify-center w-16 h-16 rounded-full bg-sky-100 text-sky-500 mx-auto mb-4";
+                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                }
+
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    box.classList.remove('scale-95');
+                    box.classList.add('scale-100');
+                }, 10);
+
+                const cleanup = (result) => {
+                    modal.classList.add('opacity-0');
+                    box.classList.remove('scale-100');
+                    box.classList.add('scale-95');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        resolve(result);
+                    }, 300);
+                    document.getElementById('confirm-btn-cancel').onclick = null;
+                    btnOk.onclick = null;
+                };
+
+                document.getElementById('confirm-btn-cancel').onclick = () => { playClick(); cleanup(false); };
+                btnOk.onclick = () => { playClick(); cleanup(true); };
+            });
+        }
+
+        // 🖥️ DEEP SOVEREIGN OS INTEGRATION
+        function notifyOS(title, message) {
+            if (window !== window.top) {
+                // Send payload up to Sovereign Kernel
+                window.parent.postMessage({ type: 'SOVEREIGN_NOTIFY', title: title, message: message }, '*');
+            } else {
+                showToast(`${title}: ${message}`, 'info'); // Fallback when running native web
+            }
+        }
+
+        if (window !== window.top) {
+            console.log("🖥️ Sovereign OS Environment Detected");
+            document.body.style.borderRadius = "0px"; 
+            document.body.style.background = "rgba(255, 255, 255, 0.1)"; 
+            // Handshake with Sovereign OS Kernel
+            window.parent.postMessage({ type: 'SOVEREIGN_APP_READY', appName: 'GoodCool POS', version: 'v11' }, '*');
+        }
+
+        // 🔐 ANDROID-STYLE PATTERN LOCK LOGIC
+        let patternNodes = [];
+        let isDrawingPattern = false;
+        let patternSvg = document.getElementById('pattern-lines');
+        const dots = document.querySelectorAll('.pattern-dot');
+        const patternContainer = document.getElementById('pattern-lock');
+
+        function getDotCenter(dot) {
+            const rect = dot.getBoundingClientRect();
+            const containerRect = patternContainer.getBoundingClientRect();
+            return { x: rect.left - containerRect.left + rect.width / 2, y: rect.top - containerRect.top + rect.height / 2 };
+        }
+
+        patternContainer.addEventListener('pointerdown', (e) => {
+            isDrawingPattern = true; patternNodes = [];
+            patternSvg.innerHTML = '<polyline id="pattern-path" fill="none" stroke="#03e9f4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><line id="dynamic-line" fill="none" stroke="#03e9f4" stroke-width="6" opacity="0.5" stroke-linecap="round"/>';
+            dots.forEach(d => d.classList.remove('active', 'error'));
+            handlePointerMove(e);
+            patternContainer.setPointerCapture(e.pointerId);
+        });
+
+        patternContainer.addEventListener('pointermove', handlePointerMove);
+
+        patternContainer.addEventListener('pointerup', (e) => {
+            if(!isDrawingPattern) return;
+            isDrawingPattern = false;
+            const dLine = document.getElementById('dynamic-line'); if(dLine) dLine.remove();
+            checkPattern();
+            patternContainer.releasePointerCapture(e.pointerId);
+        });
+
+        function handlePointerMove(e) {
+            if (!isDrawingPattern) return;
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            if (target && target.classList.contains('pattern-dot')) {
+                const id = parseInt(target.getAttribute('data-id'));
+                if (!patternNodes.includes(id)) {
+                    patternNodes.push(id); target.classList.add('active'); updatePatternSvg();
+                }
+            }
+            if (patternNodes.length > 0) {
+                const lastDot = document.querySelector(`.pattern-dot[data-id="${patternNodes[patternNodes.length-1]}"]`);
+                const center = getDotCenter(lastDot);
+                const dLine = document.getElementById('dynamic-line');
+                const containerRect = patternContainer.getBoundingClientRect();
+                if(dLine) { dLine.setAttribute('x1', center.x); dLine.setAttribute('y1', center.y); dLine.setAttribute('x2', e.clientX - containerRect.left); dLine.setAttribute('y2', e.clientY - containerRect.top); }
+            }
+        }
+
+        function updatePatternSvg() {
+            const path = document.getElementById('pattern-path');
+            if(!path) return;
+            const points = patternNodes.map(id => {
+                const dot = document.querySelector(`.pattern-dot[data-id="${id}"]`);
+                const center = getDotCenter(dot);
+                return `${center.x},${center.y}`;
+            }).join(' ');
+            path.setAttribute('points', points);
+        }
+
+        function checkPattern() {
+            const p = patternNodes.join('');
+            if (p === '1478963') {
+                currentUserRole = 'god'; currentUsername = 'Owner';
+                document.getElementById('btn-factory-reset').classList.remove('hidden'); document.getElementById('btn-clear-queue').classList.remove('hidden');
+                unlockSystem("GOD MODE - Owner Panel");
+            } 
+            else if (p === '1235789') {
+                currentUserRole = 'manager'; currentUsername = 'Manager';
+                unlockSystem("Manager Edition");
+            } 
+            else if (p === '14789') {
+                currentUserRole = 'staff'; currentUsername = 'Staff';
+                document.getElementById('link-dashboard').classList.add('hidden'); document.getElementById('link-settings').classList.add('hidden');
+                document.getElementById('link-menu').classList.add('hidden'); document.getElementById('add-table-controls').classList.add('hidden');
+                unlockSystem("Staff Edition");
+            } 
+            else if (p === '321478965') {
+                playSuccess(); startMiniGame(); resetPattern();
+            } 
+            else {
+                dots.forEach(d => { if(d.classList.contains('active')) { d.classList.remove('active'); d.classList.add('error'); }});
+                const path = document.getElementById('pattern-path'); if(path) path.setAttribute('stroke', '#ef4444');
+                showToast("Incorrect Pattern. Try Again.", "error");
+                setTimeout(resetPattern, 800);
+            }
+        }
+
+        function resetPattern() { patternNodes = []; patternSvg.innerHTML = ''; dots.forEach(d => d.classList.remove('active', 'error')); }
+
+        // 🔒 FAST-SWITCH PIN PAD (Lock Screen Shortcuts fallback)
+        document.addEventListener('keydown', (e) => {
+            const loginLayer = document.getElementById('login-layer');
+            
+            if (!loginLayer.classList.contains('hidden') && document.activeElement.tagName !== 'INPUT') {
+                const key = e.key.toLowerCase();
+                
+                if (key === 'u') {
+                    currentUserRole = 'god'; currentUsername = 'Owner';
+                    document.getElementById('btn-factory-reset').classList.remove('hidden'); document.getElementById('btn-clear-queue').classList.remove('hidden');
+                    unlockSystem("GOD MODE - Owner Panel");
+                } else if (key === 'z') {
+                    currentUserRole = 'manager'; currentUsername = 'Manager';
+                    unlockSystem("Manager Edition");
+                } else if (key === 'l') {
+                    currentUserRole = 'staff'; currentUsername = 'Staff';
+                    document.getElementById('link-dashboard').classList.add('hidden'); document.getElementById('link-settings').classList.add('hidden');
+                    document.getElementById('link-menu').classList.add('hidden'); document.getElementById('add-table-controls').classList.add('hidden');
+                    unlockSystem("Staff Edition");
+                } else if (key === 'g') { playSuccess(); startMiniGame(); }
+            }
+        });
+
+        async function syncToCloud() {
+            if (!window.db || isSyncingFromCloud) return;
+            const dataToSync = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs };
+            try {
+                await window.fbSetDoc(window.fbDoc(window.db, "goodcool_pos", "master_state"), dataToSync);
+                document.getElementById('cloud-status').classList.remove('hidden');
+            } catch(error) { console.error("Cloud Sync Error:", error); }
+        }
+
+        function initFirebaseListener() {
+            if (!window.db) return;
+            window.fbOnSnapshot(window.fbDoc(window.db, "goodcool_pos", "master_state"), (doc) => {
+                if (doc.exists()) {
+                    isSyncingFromCloud = true;
+                    const cloudData = doc.data();
+                    
+                    if(cloudData.config) appConfig = cloudData.config;
+                    if(cloudData.menu) menu = cloudData.menu;
+                    if(cloudData.tables) tables = cloudData.tables;
+                    if(cloudData.sales) sales = cloudData.sales;
+                    if(cloudData.tabs) openTabs = cloudData.tabs;
+                    if(cloudData.queue) queueList = cloudData.queue;
+                    if(cloudData.tracker) dailyTracker = cloudData.tracker;
+                    if(cloudData.shifts) shiftLogs = cloudData.shifts;
+
+                    localStorage.setItem('tino_config', JSON.stringify(appConfig));
+                    localStorage.setItem('tino_menu', JSON.stringify(menu));
+                    localStorage.setItem('tino_tables', JSON.stringify(tables));
+                    localStorage.setItem('tino_sales', JSON.stringify(sales));
+                    localStorage.setItem('tino_tabs', JSON.stringify(openTabs));
+                    localStorage.setItem('tino_queue', JSON.stringify(queueList));
+                    localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+                    localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs));
+
+                    applyCustomStyling(); loadSettingsUI(); renderTableManager(); renderMenuManager(); renderDashboard(); renderCart(); renderQueue(); renderWorkspace();
+                    
+                    document.getElementById('cloud-status').classList.remove('hidden');
+                    isSyncingFromCloud = false;
+                }
+            });
+        }
+
+        window.addEventListener('load', () => { 
+            setTimeout(() => { 
+                const loader = document.getElementById('loader-layer');
+                loader.style.opacity = '0'; setTimeout(() => loader.classList.add('hidden'), 800); 
+            }, 1000); 
+            
+            const todayStr = new Date().toLocaleDateString();
+            if(dailyTracker.date !== todayStr) {
+                dailyTracker = { date: todayStr, count: 0 };
+                queueList = []; 
+                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+                localStorage.setItem('tino_queue', JSON.stringify(queueList));
+            }
+
+            // 📶 BULLETPROOF OFFLINE MODE (Blob Service Worker)
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'goodcool-pos-offline-v1';
+                    self.addEventListener('install', e => {
+                        e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([location.href])));
+                    });
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob))
+                    .then(() => console.log('🛡️ Bulletproof Offline Cache Active'))
+                    .catch(err => console.warn('Offline cache failed:', err));
+            }
+
+            window.addEventListener('online', () => {
+                let statusBadge = document.getElementById('cloud-status');
+                statusBadge.innerText = '☁️ Synced (Online)';
+                statusBadge.className = 'text-xs bg-emerald-500/20 text-emerald-700 font-bold px-2 py-1 rounded';
+                syncToCloud(); 
+            });
+            
+            window.addEventListener('offline', () => {
+                let statusBadge = document.getElementById('cloud-status');
+                statusBadge.innerText = '🚫 Offline Mode';
+                statusBadge.className = 'text-xs bg-red-500/20 text-red-700 font-bold px-2 py-1 rounded';
+                statusBadge.classList.remove('hidden');
+                showToast("Lost Internet Connection. Running Offline.", "error");
+            });
+        });
+
+        function playClick() { const a = document.getElementById('sfx-click'); a.currentTime=0; a.play().catch(e=>{}); }
+        function playSuccess() { const a = document.getElementById('sfx-success'); a.currentTime=0; a.play().catch(e=>{}); }
+        function playDelete() { const a = document.getElementById('sfx-delete'); a.currentTime=0; a.play().catch(e=>{}); }
+
+        function unlockSystem(editionText) {
+            playSuccess();
+            document.getElementById('edition-label').innerText = editionText;
+            document.getElementById('login-layer').style.transform = "translateY(-100%)";
+            showToast(`Welcome back, ${currentUsername}!`, "success");
+            setTimeout(() => { document.getElementById('login-layer').classList.add('hidden'); initApp(); }, 800);
+        }
+
+        function toggleMobileMenu() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); playClick(); }
+
+        // 📱 Table-Side Waiter Cart Toggle
+        function toggleMobileCart() {
+            const cartArea = document.getElementById('receipt-area');
+            cartArea.classList.toggle('mobile-open');
+            playClick();
+        }
+
+        function initApp() {
+            if(!openTabs[activeTable]) openTabs[activeTable] = [];
+            applyCustomStyling(); loadSettingsUI(); renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace();
+            document.getElementById('pos-table-select').innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join('');
+            switchTable(tables[0]);
+            initFirebaseListener();
+        }
+
+        function showPage(pageId) {
+            ['pos', 'dashboard', 'menu', 'tables', 'settings', 'queue', 'work'].forEach(p => {
+                const page = document.getElementById('page-' + p);
+                if(page) { page.classList.add('hidden'); page.classList.remove('animate-slide-right', 'flex'); }
+                const link = document.getElementById('link-' + p);
+                if(link) link.classList.remove('active-link');
+            });
+            const activePage = document.getElementById('page-' + pageId);
+            if(pageId === 'pos' || pageId === 'queue' || pageId === 'dashboard') { activePage.classList.remove('hidden'); activePage.classList.add('flex', 'animate-slide-right'); } 
+            else { activePage.classList.remove('hidden'); activePage.classList.add('animate-slide-right'); }
+            
+            document.getElementById('link-' + pageId).classList.add('active-link');
+            if(window.innerWidth < 768) toggleMobileMenu(); 
+            if(pageId === 'dashboard') renderDashboard();
+            if(pageId === 'queue') renderQueue();
+            if(pageId === 'work') renderWorkspace();
+        }
+
+        function applyCustomStyling() {
+            let bgUrl = appConfig.customBg || '';
+            let videoEl = document.getElementById('dynamic-bg-video');
+
+            if (bgUrl.match(/\.(mp4|webm|ogg)$/i)) {
+                document.body.style.background = 'transparent'; 
+                if (!videoEl) {
+                    videoEl = document.createElement('video'); videoEl.id = 'dynamic-bg-video'; videoEl.autoplay = true; videoEl.loop = true; videoEl.muted = true; videoEl.playsInline = true;
+                    videoEl.style.position = 'fixed'; videoEl.style.top = '0'; videoEl.style.left = '0'; videoEl.style.width = '100vw'; videoEl.style.height = '100vh'; videoEl.style.objectFit = 'cover'; videoEl.style.zIndex = '-1'; 
+                    document.body.appendChild(videoEl);
+                }
+                if (videoEl.src !== bgUrl) videoEl.src = bgUrl;
+                videoEl.style.display = 'block';
+            } else {
+                if (videoEl) videoEl.style.display = 'none'; 
+                if (bgUrl) { document.body.style.background = `url('${bgUrl}') no-repeat center center fixed`; document.body.style.backgroundSize = 'cover'; } 
+                else { document.body.style.background = `linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)`; }
+            }
+
+            let styleBlock = document.getElementById('custom-styling-block');
+            let customCss = '';
+            if (appConfig.customCursor) customCss += `* { cursor: url('${appConfig.customCursor}'), auto !important; } .glass-button:hover, button:hover, a:hover { cursor: url('${appConfig.customCursor}'), pointer !important; }\n`;
+            let fontLink = document.getElementById('dynamic-google-font');
+            if (appConfig.customFont) {
+                const formattedName = appConfig.customFont.replace(/\s+/g, '+');
+                const fontUrl = `https://fonts.googleapis.com/css2?family=${formattedName}:wght@400;700;900&display=swap`;
+                if (!fontLink) { fontLink = document.createElement('link'); fontLink.id = 'dynamic-google-font'; fontLink.rel = 'stylesheet'; document.head.appendChild(fontLink); }
+                fontLink.href = fontUrl;
+                customCss += `body, button, input, select, p, h1, h2, h3, h4, span, div, table, th, td { font-family: '${appConfig.customFont}', 'Segoe UI', sans-serif !important; }\n`;
+            } else { if (fontLink) fontLink.remove(); }
+            styleBlock.innerHTML = customCss;
+        }
+
+        function toggleShift() {
+            playClick();
+            let openShift = shiftLogs.find(s => s.name === currentUsername && !s.outTime);
+            if(openShift) {
+                openShift.outTime = new Date().toLocaleString();
+                showToast("Clocked Out Successfully", "info");
+            } else {
+                shiftLogs.push({ name: currentUsername, role: currentUserRole, inTime: new Date().toLocaleString(), outTime: null });
+                showToast("Clocked In Successfully", "success");
+            }
+            localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs));
+            syncToCloud();
+            renderWorkspace();
+        }
+
+        function renderWorkspace() {
+            document.getElementById('work-user-name').innerText = currentUsername;
+            document.getElementById('work-user-role').innerText = currentUserRole.toUpperCase();
+
+            let openShift = shiftLogs.find(s => s.name === currentUsername && !s.outTime);
+            let btn = document.getElementById('btn-timeclock');
+            let status = document.getElementById('work-status');
+
+            if(openShift) {
+                btn.innerText = "CLOCK OUT";
+                btn.className = "w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-red-500 hover:bg-red-400";
+                status.innerText = "Status: CLOCKED IN (" + openShift.inTime.split(', ')[1] + ")";
+                status.className = "text-emerald-600 font-bold mt-2 text-sm";
+            } else {
+                btn.innerText = "CLOCK IN";
+                btn.className = "w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-emerald-500 hover:bg-emerald-400";
+                status.innerText = "Status: CLOCKED OUT";
+                status.className = "text-slate-500 font-bold mt-2 text-sm";
+            }
+
+            let logsTable = document.getElementById('work-logs');
+            let displayLogs = (currentUserRole === 'god' || currentUserRole === 'manager') ? shiftLogs : shiftLogs.filter(s => s.name === currentUsername);
+
+            if(displayLogs.length === 0) {
+                logsTable.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500 italic">No shift logs found.</td></tr>`;
+            } else {
+                logsTable.innerHTML = displayLogs.slice().reverse().map(s => `
+                    <tr class="border-b border-white/20 last:border-0">
+                        <td class="p-4 font-bold text-slate-800">${s.name} <span class="text-xs text-slate-500 block uppercase">${s.role}</span></td>
+                        <td class="p-4 text-slate-600 text-sm">${s.inTime}</td>
+                        <td class="p-4 text-slate-600 text-sm">${s.outTime || '<span class="text-emerald-500 font-bold">Active</span>'}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function switchTable(tableName) {
+            activeTable = tableName;
+            if(!openTabs[activeTable]) openTabs[activeTable] = [];
+            document.getElementById('pos-table-select').value = tableName;
+            document.getElementById('receipt-table-display').innerText = tableName;
+            renderCart(); renderPOSMenu();
+        }
+        function selectFloorTable(tableName) { playClick(); switchTable(tableName); showPage('pos'); }
+        function saveTabs() { localStorage.setItem('tino_tabs', JSON.stringify(openTabs)); syncToCloud(); }
+
+        function openTransferModal(fromTable) {
+            let tab = openTabs[fromTable];
+            if (!tab || tab.length === 0) return showToast("This table is empty.", "error");
+            document.getElementById('transfer-from-name').innerText = fromTable;
+            document.getElementById('transfer-from-name').setAttribute('data-from', fromTable);
+            document.getElementById('transfer-to-select').innerHTML = tables.filter(t => t !== fromTable).map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('transfer-modal').classList.remove('hidden');
+        }
+        function closeTransferModal() { document.getElementById('transfer-modal').classList.add('hidden'); }
+        
+        async function executeTransfer() {
+            const fromTable = document.getElementById('transfer-from-name').getAttribute('data-from');
+            const targetTable = document.getElementById('transfer-to-select').value;
+            if(!targetTable || !fromTable) return;
+            
+            if(openTabs[targetTable] && openTabs[targetTable].length > 0) {
+                const confirmed = await customConfirm(`${targetTable} has an active order. Merge?`, "Merge Tables", "Yes, Merge", "info");
+                if(!confirmed) return;
+                openTabs[targetTable] = [...openTabs[targetTable], ...openTabs[fromTable]];
+            } else { 
+                openTabs[targetTable] = [...openTabs[fromTable]]; 
+            }
+            openTabs[fromTable] = []; closeTransferModal(); saveTabs(); switchTable(targetTable); renderTableManager(); 
+            showToast("Order Transferred", "success");
+        }
+
+        function renderTableManager() { 
+            const list = document.getElementById('manager-table-list');
+            if(!list) return;
+            list.innerHTML = tables.map((t, i) => {
+                const isOccupied = openTabs[t] && openTabs[t].length > 0;
+                
+                const bgClass = isOccupied ? 'bg-red-600 border-red-700 text-white shadow-xl' : 'glass-panel border-transparent hover:border-sky-400';
+                const nameClass = isOccupied ? 'text-white' : 'text-slate-800';
+                const iconClass = isOccupied ? 'text-white' : 'opacity-80 group-hover:opacity-100 group-hover:text-sky-500';
+                const occupiedText = isOccupied ? '<span class="text-xs font-bold uppercase mt-1 text-white/90">Occupied</span>' : '';
+                
+                const transferBtn = isOccupied ? `<button type="button" onclick="event.stopPropagation(); openTransferModal('${t}'); playClick()" class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 text-white font-bold flex items-center justify-center hover:bg-white hover:text-red-600 transition-all opacity-0 group-hover:opacity-100 z-10">🔄</button>` : '';
+                const delBtn = (currentUserRole === 'god' || currentUserRole === 'manager') ? `<button type="button" onclick="event.stopPropagation(); deleteTable(${i}); playClick()" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-800/20 text-red-200 font-bold flex items-center justify-center hover:bg-red-800 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10">×</button>` : '';
+                
+                return `<div onclick="selectFloorTable('${t}')" class="glass-panel aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer border-2 transition transform hover:-translate-y-2 group relative ${bgClass}"><span class="text-4xl mb-2 ${iconClass}">🪑</span><h3 class="font-black text-xl text-center leading-tight ${nameClass}">${t}</h3>${occupiedText}${transferBtn}${delBtn}</div>`
+            }).join(''); 
+            const sel = document.getElementById('pos-table-select');
+            if(sel) sel.innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join(''); 
+            localStorage.setItem('tino_tables', JSON.stringify(tables)); 
+        }
+        
+        function addTable() { const input = document.getElementById('new-table-name'), name = input.value.trim(); if(name) { tables.push(name); input.value = ""; renderTableManager(); syncToCloud(); showToast("Table Added", "success"); } }
+        
+        async function deleteTable(index) { 
+            if(await customConfirm(`Are you sure you want to delete ${tables[index]}?`, "Delete Table", "Delete", "danger")) { 
+                tables.splice(index, 1); renderTableManager(); syncToCloud(); showToast("Table Removed", "info"); 
+            } 
+        }
+
+        function loadSettingsUI() {
+            document.getElementById('config-tax').value = appConfig.tax;
+            document.getElementById('config-discount').value = appConfig.discount;
+            document.getElementById('config-promo').value = appConfig.promo || '';
+            document.getElementById('config-webusb').checked = appConfig.useWebUSB || false;
+            document.getElementById('config-bg').value = appConfig.customBg || '';
+            document.getElementById('config-cursor').value = appConfig.customCursor || '';
+            document.getElementById('config-font').value = appConfig.customFont || '';
+            document.getElementById('tax-percent').innerText = appConfig.tax;
+        }
+
+        function saveSettings() {
+            appConfig.tax = parseFloat(document.getElementById('config-tax').value) || 0;
+            appConfig.discount = parseFloat(document.getElementById('config-discount').value) || 0;
+            appConfig.promo = document.getElementById('config-promo').value.trim();
+            appConfig.useWebUSB = document.getElementById('config-webusb').checked;
+            appConfig.customBg = document.getElementById('config-bg').value.trim();
+            appConfig.customCursor = document.getElementById('config-cursor').value.trim();
+            appConfig.customFont = document.getElementById('config-font').value.trim();
+            localStorage.setItem('tino_config', JSON.stringify(appConfig));
+            applyCustomStyling(); loadSettingsUI(); renderCart(); syncToCloud();
+            showToast("Settings Saved Successfully", "success");
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('pos-search').value.toLowerCase();
+            const grid = document.getElementById('pos-menu-grid');
+            if (query.trim() === "") { renderPOSMenu(); return; }
+            const results = menu.filter(item => item.name.toLowerCase().includes(query) || (item.code && item.code.toLowerCase().includes(query)));
+            if(results.length === 0) { grid.innerHTML = `<div class="col-span-full text-center text-slate-500 italic mt-10">No items found</div>`; return; }
+            grid.innerHTML = results.map((item, index) => generateItemButton(item, index)).join('');
+        }
+
+        function generateItemButton(item, index) {
+            const bgStyle = item.img ? `background: url('${item.img}') center/cover; border: none;` : '';
+            const textShadow = item.img ? 'text-shadow: 0 2px 4px rgba(0,0,0,0.8);' : '';
+            const textColor = item.img ? 'text-white' : 'text-slate-800';
+            const priceColor = item.img ? 'text-white' : 'text-slate-700';
+            const catColor = item.img ? 'text-sky-300' : 'text-sky-600';
+
+            return `<button type="button" onclick="addToCart('${item.name}', ${item.price}); playClick()" class="glass-button p-4 rounded-2xl text-left flex flex-col justify-between h-32 animate-pop-in relative overflow-hidden group" style="${bgStyle}">
+                ${item.img ? `<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30 group-hover:bg-black/40 transition-all z-0"></div>` : ''}
+                <div class="relative z-10" style="${textShadow}"><p class="${catColor} text-[10px] uppercase font-black mb-1">${item.cat || ''}</p><p class="font-bold ${textColor} leading-tight text-lg">${item.name}</p></div>
+                <p class="${priceColor} font-black mt-2 relative z-10 text-xl" style="${textShadow}">${item.price.toLocaleString()} Ks</p>
+            </button>`;
+        }
+
+        function renderPOSMenu() {
+            if(document.getElementById('pos-search').value.trim() !== "") return;
+            const grid = document.getElementById('pos-menu-grid');
+            if (!currentCat) {
+                const categories = [...new Set(menu.map(item => item.cat))];
+                grid.innerHTML = categories.map((cat, i) => `<button type="button" onclick="currentCat='${cat}'; renderPOSMenu(); playClick()" class="glass-button p-6 rounded-2xl h-28 font-black text-slate-800 text-lg animate-pop-in">📁<br>${cat}</button>`).join('');
+            } else {
+                const items = menu.filter(item => item.cat === currentCat);
+                let html = `<button type="button" onclick="currentCat=null; renderPOSMenu(); playClick()" class="glass-button p-4 rounded-2xl h-28 bg-slate-800/5 hover:bg-slate-800/10 font-black text-slate-800">← Back</button>`;
+                html += items.map((item, i) => generateItemButton(item, i)).join('');
+                grid.innerHTML = html;
+            }
+        }
+
+        function addToCart(name, price) {
+            let tab = openTabs[activeTable];
+            let existing = tab.find(i => i.name === name);
+            if (existing) { existing.qty += 1; } else { tab.push({ name, price, qty: 1 }); }
+            saveTabs(); renderCart();
+        }
+
+        function adjustQty(index, amount) {
+            let tab = openTabs[activeTable];
+            tab[index].qty += amount;
+            if (tab[index].qty <= 0) { tab.splice(index, 1); playDelete(); } else { playClick(); }
+            saveTabs(); renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            const discRow = document.getElementById('discount-row');
+            const mobileCount = document.getElementById('mobile-cart-count');
+            let tab = openTabs[activeTable] || [];
+            
+            // Update Mobile Drawer Count
+            if(mobileCount) {
+                const totalItems = tab.reduce((sum, item) => sum + item.qty, 0);
+                mobileCount.innerText = totalItems;
+                if(totalItems > 0) mobileCount.classList.remove('hidden'); else mobileCount.classList.add('hidden');
+            }
+            
+            if (tab.length === 0) {
+                list.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 italic">Cart is empty</div>';
+                document.getElementById('subtotal').innerText = "0"; document.getElementById('tax-amt').innerText = "0"; document.getElementById('grand-total').innerText = "0";
+                discRow.style.display = 'none'; return;
+            }
+
+            list.innerHTML = tab.map((item, i) => `
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center p-3 glass-button rounded-xl mb-2 no-print">
+                    <div class="flex flex-col"><span class="font-bold">${item.name}</span><span class="text-xs text-sky-600 font-bold">${item.price.toLocaleString()} Ks</span></div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center bg-white/50 rounded-lg border border-white/60">
+                            <button type="button" onclick="adjustQty(${i}, -1)" class="px-3 py-1 font-bold hover:bg-white">-</button>
+                            <span class="px-2 font-bold w-[30px] text-center">${item.qty}</span>
+                            <button type="button" onclick="adjustQty(${i}, 1)" class="px-3 py-1 font-bold hover:bg-white">+</button>
+                        </div>
+                        <span class="font-black w-[70px] text-right">${(item.price * item.qty).toLocaleString()}</span>
+                    </div>
+                </div>
+                <div class="print-item-row hidden justify-between text-xs mb-1 w-full font-bold text-black border-b border-dashed border-gray-300 pb-1">
+                    <span class="w-1/2 text-left pr-2" style="white-space: normal; word-wrap: break-word;">${item.name}</span>
+                    <span class="w-1/4 text-center">${item.qty}</span>
+                    <span class="w-1/4 text-right">${(item.price * item.qty).toLocaleString()}</span>
+                </div>
+            `).join('');
+
+            const sub = tab.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            let discAmt = appConfig.discount > 0 ? Math.round(sub * (appConfig.discount / 100)) : 0;
+            if(discAmt > 0) { document.getElementById('disc-percent').innerText = appConfig.discount; document.getElementById('disc-amt').innerText = discAmt.toLocaleString(); discRow.style.display = 'flex'; } else { discRow.style.display = 'none'; }
+            
+            const taxAmt = Math.round((sub - discAmt) * (appConfig.tax / 100)); 
+            document.getElementById('subtotal').innerText = sub.toLocaleString();
+            document.getElementById('tax-amt').innerText = taxAmt.toLocaleString();
+            document.getElementById('grand-total').innerText = (sub - discAmt + taxAmt).toLocaleString();
+        }
+
+        async function executeWebUSBPrint(textData) {
+            try {
+                const INIT = '\x1B\x40'; const CUT = '\x1D\x56\x41\x00';
+                let device = await navigator.usb.requestDevice({ filters: [] });
+                await device.open(); await device.selectConfiguration(1); await device.claimInterface(0);
+                const encoder = new TextEncoder();
+                const data = encoder.encode(INIT + textData + '\n\n\n\n' + CUT);
+                await device.transferOut(1, data); await device.close(); return true;
+            } catch (error) { console.warn("WebUSB Print Failed. Falling back.", error); return false; }
+        }
+
+        function generateESCPOSReceiptText(tab, orderNo, isKOT = false) {
+            let txt = "     GOOD COOL & BAKERY\n    Nay Pyi Taw, Pyinmana\n--------------------------------\n";
+            if (isKOT) txt += "      *** KITCHEN ORDER ***\n";
+            txt += "Date: " + new Date().toLocaleString() + "\nTable: " + activeTable + "\nOrder: " + orderNo + "\n--------------------------------\n";
+            tab.forEach(i => {
+                let line = `${i.qty}x ${i.name}`;
+                if (!isKOT) {
+                    let priceStr = (i.price * i.qty).toString();
+                    let spaces = 32 - line.length - priceStr.length;
+                    line += " ".repeat(spaces > 0 ? spaces : 1) + priceStr;
+                }
+                txt += line + "\n";
+            });
+            if(!isKOT) {
+                const sub = tab.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                const tax = Math.round(sub * (appConfig.tax / 100));
+                txt += "--------------------------------\n";
+                txt += `SUBTOTAL:           ${sub} Ks\nTAX (${appConfig.tax}%):             ${tax} Ks\nTOTAL:              ${sub+tax} Ks\n`;
+            }
+            return txt;
+        }
+
+        async function executePrint(containerId, onSuccess, escposText = null) {
+            if (appConfig.useWebUSB && escposText) {
+                let success = await executeWebUSBPrint(escposText);
+                if(success) { if(onSuccess) onSuccess(); return; }
+            }
+            
+            const targetContainer = document.getElementById(containerId);
+            const printHost = document.createElement('div');
+            printHost.id = 'print-host-container';
+            printHost.innerHTML = targetContainer.innerHTML;
+            
+            printHost.style.position = 'fixed';
+            printHost.style.left = '0';
+            printHost.style.top = '0';
+            printHost.style.width = '320px'; 
+            printHost.style.height = 'auto'; 
+            printHost.style.background = 'white';
+            printHost.style.color = 'black';
+            printHost.style.zIndex = '999999';
+            printHost.style.padding = '20px';
+            printHost.style.boxSizing = 'border-box';
+            
+            document.body.appendChild(printHost);
+            
+            printHost.querySelectorAll('.no-print').forEach(el => el.remove());
+            
+            printHost.querySelectorAll('.print-item-row').forEach(el => { 
+                el.classList.remove('hidden'); 
+                el.style.display = 'flex'; 
+            });
+
+            let cartList = printHost.querySelector('#cart-list');
+            if(cartList) {
+                cartList.style.height = 'auto';
+                cartList.style.overflow = 'visible';
+                cartList.classList.remove('flex-1', 'overflow-y-auto', 'mb-4');
+            }
+
+            const isIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            setTimeout(async () => {
+                if (isIPad) {
+                    if(await customConfirm("iPad Detected: Save as Image for USB Printer App? (Cancel to AirPrint)", "Print Method", "Save Image", "info")) {
+                        html2canvas(printHost, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
+                            const link = document.createElement('a'); 
+                            link.download = `Print_${Date.now()}.png`; 
+                            link.href = canvas.toDataURL("image/png"); 
+                            link.click(); 
+                            document.body.removeChild(printHost);
+                            if(onSuccess) onSuccess();
+                        });
+                    } else { 
+                        document.body.classList.add('printing-mode');
+                        window.print(); 
+                        document.body.classList.remove('printing-mode');
+                        document.body.removeChild(printHost); 
+                        if(onSuccess) onSuccess(); 
+                    }
+                } else { 
+                    document.body.classList.add('printing-mode');
+                    window.print(); 
+                    document.body.classList.remove('printing-mode');
+                    document.body.removeChild(printHost); 
+                    if(onSuccess) onSuccess(); 
+                }
+            }, 300);
+        }
+
+        function saveOrder() {
+            let tab = openTabs[activeTable];
+            if (!tab || tab.length === 0) return showToast("Cart is empty! Nothing to save.", "error"); 
+            playSuccess();
+            
+            const itemsList = tab.map(i => `${i.qty}x ${i.name}`).join(', ');
+            let existingQueueItem = queueList.find(q => q.table === activeTable && q.status === 'preparing');
+            
+            if (existingQueueItem) {
+                existingQueueItem.items = itemsList;
+                existingQueueItem.time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else {
+                dailyTracker.count++;
+                const orderNo = "#" + String(dailyTracker.count).padStart(3, '0');
+                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+                queueList.push({ id: Date.now(), orderNo: orderNo, table: activeTable, items: itemsList, status: 'preparing', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            }
+            
+            localStorage.setItem('tino_queue', JSON.stringify(queueList));
+            renderQueue(); saveTabs(); renderTableManager(); 
+            notifyOS('Table Saved', `Order parked for ${activeTable}`);
+
+            const overlay = document.getElementById('success-overlay');
+            document.getElementById('overlay-text').innerText = "ORDER SAVED!"; 
+            overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
+
+            setTimeout(() => {
+                overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
+                document.getElementById('pos-search').value = ""; renderPOSMenu(); 
+                const cartArea = document.getElementById('receipt-area');
+                if(cartArea.classList.contains('mobile-open')) toggleMobileCart();
+            }, 800);
+        }
+
+        function processOrder() {
+            let tab = openTabs[activeTable];
+            if (!tab || tab.length === 0) return showToast("Cannot complete an empty order!", "error"); 
+            playSuccess();
+            
+            const itemsList = tab.map(i => `${i.qty}x ${i.name}`).join(', ');
+            let existingQueueItem = queueList.find(q => q.table === activeTable && q.status === 'preparing');
+            let orderNo;
+
+            if (existingQueueItem) {
+                orderNo = existingQueueItem.orderNo;
+                existingQueueItem.time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else {
+                dailyTracker.count++;
+                orderNo = "#" + String(dailyTracker.count).padStart(3, '0');
+                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+            }
+
+            document.getElementById('receipt-date').innerText = new Date().toLocaleString();
+            let rn = document.getElementById('receipt-order-no'); rn.innerText = "ORDER " + orderNo; rn.classList.remove('hidden');
+
+            const orderTotal = parseInt(document.getElementById('grand-total').innerText.replace(/,/g, ''));
+
+            sales.push({ time: new Date().toLocaleTimeString(), dateObj: new Date().toLocaleString(), table: activeTable, orderNo: orderNo, items: itemsList, total: orderTotal, rawItems: [...tab], appliedTax: appConfig.tax, appliedDiscount: appConfig.discount });
+            localStorage.setItem('tino_sales', JSON.stringify(sales));
+            
+            notifyOS('Payment Received', `${orderTotal.toLocaleString()} Ks from ${activeTable}`);
+
+            const overlay = document.getElementById('success-overlay');
+            document.getElementById('overlay-text').innerText = "PRINTING..."; 
+            overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
+
+            let escposText = generateESCPOSReceiptText(tab, orderNo, false);
+            
+            setTimeout(() => {
+                executePrint('receipt-area', () => {
+                    overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
+                    rn.classList.add('hidden'); openTabs[activeTable] = []; saveTabs(); document.getElementById('pos-search').value = ""; 
+                    renderCart(); renderPOSMenu(); renderTableManager(); renderDashboard(); renderQueue();
+                    const cartArea = document.getElementById('receipt-area');
+                    if(cartArea.classList.contains('mobile-open')) toggleMobileCart();
+                }, escposText);
+            }, 500);
+        }
+
+        function printKOT() {
+            let tab = openTabs[activeTable];
+            if (!tab || tab.length === 0) return showToast("Cart is empty!", "error");
+            playSuccess();
+            
+            document.getElementById('overlay-text').innerText = "SENDING KOT...";
+            const overlay = document.getElementById('success-overlay');
+            overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
+
+            document.getElementById('kot-table').innerText = activeTable;
+            document.getElementById('kot-date').innerText = new Date().toLocaleString();
+            document.getElementById('kot-items').innerHTML = tab.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font-weight:900; font-size:1.2em;">${i.qty}x</span><span style="flex-grow:1; margin-left:10px; font-weight:bold;">${i.name}</span></div>`).join('');
+
+            let escposText = generateESCPOSReceiptText(tab, "KOT", true);
+            
+            setTimeout(() => {
+                executePrint('kot-print-area', () => {
+                    overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
+                    showToast("KOT Sent to Kitchen", "success");
+                    notifyOS('Kitchen Alert', `New KOT sent for ${activeTable}`);
+                }, escposText);
+            }, 800);
+        }
+
+        // 📄 Reprint from History Logic
+        function reprintReceipt(orderNo, time) {
+            const order = sales.find(s => s.orderNo === orderNo && s.time === time);
+            if (!order) return showToast("Order not found in memory!", "error");
+            
+            playSuccess();
+            document.getElementById('reprint-date').innerText = order.dateObj;
+            document.getElementById('reprint-table').innerText = order.table;
+            document.getElementById('reprint-order-no').innerText = "ORDER " + (order.orderNo || '-');
+            
+            // Reconstruct Items
+            let itemsHtml = '';
+            if (order.rawItems && order.rawItems.length > 0) {
+                itemsHtml = order.rawItems.map(item => `
+                    <div class="print-item-row flex justify-between text-xs mb-1 w-full font-bold text-black border-b border-dashed border-gray-300 pb-1">
+                        <span class="w-1/2 text-left pr-2" style="white-space: normal; word-wrap: break-word;">${item.name}</span>
+                        <span class="w-1/4 text-center">${item.qty}</span>
+                        <span class="w-1/4 text-right">${(item.price * item.qty).toLocaleString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                itemsHtml = `<div class="text-xs font-bold w-full text-center">${order.items}</div>`;
+            }
+            document.getElementById('reprint-items').innerHTML = itemsHtml;
+            
+            // Reconstruct Totals
+            const sub = order.rawItems ? order.rawItems.reduce((sum, item) => sum + (item.price * item.qty), 0) : order.total;
+            const discAmt = order.appliedDiscount > 0 ? Math.round(sub * (order.appliedDiscount / 100)) : 0;
+            const taxAmt = order.appliedTax > 0 ? Math.round((sub - discAmt) * (order.appliedTax / 100)) : 0;
+            
+            let totalsHtml = `<div class="flex justify-between font-semibold"><span>Subtotal:</span><span>${sub.toLocaleString()} Ks</span></div>`;
+            if (discAmt > 0) totalsHtml += `<div class="flex justify-between font-semibold text-red-600"><span>Discount (${order.appliedDiscount}%):</span><span>-${discAmt.toLocaleString()} Ks</span></div>`;
+            if (taxAmt > 0) totalsHtml += `<div class="flex justify-between font-semibold pb-2 border-b border-dashed border-black"><span>Tax (${order.appliedTax}%):</span><span>${taxAmt.toLocaleString()} Ks</span></div>`;
+            totalsHtml += `<div class="flex justify-between text-lg font-black pt-1"><span>TOTAL:</span><span>${order.total.toLocaleString()} Ks</span></div>`;
+            
+            document.getElementById('reprint-totals').innerHTML = totalsHtml;
+
+            // Trigger Print overlay
+            const overlay = document.getElementById('success-overlay');
+            document.getElementById('overlay-text').innerText = "REPRINTING..."; 
+            overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
+            
+            // Build ESC/POS fallback if needed
+            let escposText = generateESCPOSReceiptText(order.rawItems || [], order.orderNo, false);
+            escposText = "    *** REPRINT ***\n" + escposText;
+            
+            setTimeout(() => {
+                executePrint('reprint-area', () => {
+                    overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
+                    showToast("Receipt Reprinted Successfully!", "success");
+                }, escposText);
+            }, 500);
+        }
+
+        function renderQueue() {
+            const prepDiv = document.getElementById('queue-preparing');
+            const readyDiv = document.getElementById('queue-ready');
+            if(!prepDiv || !readyDiv) return;
+
+            let prepHTML = ""; let readyHTML = "";
+
+            queueList.forEach((q) => {
+                let card = `
+                <div class="bg-white/60 p-4 rounded-xl shadow border border-white/80 cursor-pointer hover:bg-white transition" onclick="toggleQueueStatus(${q.id})">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-black text-2xl text-slate-800">${q.orderNo}</span>
+                            <span class="text-[10px] font-bold text-slate-500 bg-slate-200/70 px-2 py-1 rounded-md">${q.time || ''}</span>
+                        </div>
+                        <span class="text-xs font-bold text-sky-700 bg-sky-100 px-2 py-1 rounded-md">${q.table}</span>
+                    </div>
+                    <p class="text-sm text-slate-600 font-medium">${q.items}</p>
+                </div>`;
+                if(q.status === 'preparing') prepHTML += card; else if(q.status === 'ready') readyHTML += card;
+            });
+
+            prepDiv.innerHTML = prepHTML || `<p class="text-center text-slate-400 italic mt-10">No active orders</p>`;
+            readyDiv.innerHTML = readyHTML || `<p class="text-center text-slate-400 italic mt-10">No orders ready</p>`;
+            syncToCloud();
+        }
+
+        function toggleQueueStatus(id) {
+            let q = queueList.find(x => x.id === id);
+            if(q) {
+                if(q.status === 'preparing') { q.status = 'ready'; playSuccess(); showToast(`Order ${q.orderNo} is Ready!`, "info"); notifyOS('Order Ready', `Order ${q.orderNo} is ready for pickup.`); }
+                else if(q.status === 'ready') { queueList = queueList.filter(x => x.id !== id); playDelete(); showToast(`Order ${q.orderNo} Completed`, "success"); } 
+                localStorage.setItem('tino_queue', JSON.stringify(queueList)); renderQueue();
+            }
+        }
+        async function clearQueue() { if(await customConfirm("Clear the entire visual queue?", "Reset Queue", "Clear All", "danger")) { queueList = []; renderQueue(); showToast("Queue Cleared", "info"); } }
+
+        function renderDashboard() {
+            const now = new Date(); 
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            let revToday = 0, revWeek = 0, revMonth = 0;
+            
+            sales.forEach(order => {
+                let orderDateStr = order.dateObj.split(',')[0];
+                let orderDate = new Date(orderDateStr);
+                let orderDay = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+
+                if (orderDay.getTime() === today.getTime()) revToday += order.total;
+                if (orderDay >= lastWeek) revWeek += order.total;
+                if (orderDay >= lastMonth) revMonth += order.total;
+            });
+
+            document.getElementById('dash-rev-today').innerText = revToday.toLocaleString();
+            document.getElementById('dash-rev-week').innerText = revWeek.toLocaleString();
+            document.getElementById('dash-rev-month').innerText = revMonth.toLocaleString();
+
+            updateSalesChart(); // 📊 Call the new Chart update function
+
+            const historyBody = document.getElementById('dash-history');
+            if(sales.length === 0) { historyBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 italic font-bold">No sales recorded yet.</td></tr>`; return; }
+            
+            const recentSales = sales.slice(-50).reverse();
+            historyBody.innerHTML = recentSales.map((order, i) => `
+                <tr class="hover:bg-white/60 transition-colors duration-200 group">
+                    <td class="p-4 align-top whitespace-nowrap">
+                        <div class="font-bold text-slate-800">${order.time}</div>
+                        <div class="text-xs text-slate-500 font-medium mt-1">${order.dateObj.split(',')[0]}</div>
+                    </td>
+                    <td class="p-4 align-top whitespace-nowrap">
+                        <div class="font-black text-sky-700">${order.orderNo || '-'}</div>
+                        <div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${order.table}</div>
+                    </td>
+                    <td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]">
+                        <p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${order.items}</p>
+                    </td>
+                    <td class="p-4 align-top whitespace-nowrap">
+                        <div class="font-black text-emerald-600 text-lg">${order.total.toLocaleString()} Ks</div>
+                    </td>
+                    <td class="p-4 text-right align-top">
+                        <button type="button" onclick="reprintReceipt('${order.orderNo}', '${order.time}')" class="bg-white border border-slate-200 text-slate-600 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 shadow-sm px-4 py-2 rounded-xl font-bold transition-all active:scale-95">📄 Print</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 📊 Interactive Chart Logic
+        function updateSalesChart() {
+            const ctx = document.getElementById('salesChart');
+            if(!ctx) return;
+            if(salesChartInstance) salesChartInstance.destroy();
+
+            const labels = [];
+            const data = [];
+            
+            for(let i=6; i>=0; i--) {
+                let d = new Date();
+                d.setDate(d.getDate() - i);
+                labels.push(d.toLocaleDateString(undefined, {month:'short', day:'numeric'}));
+                
+                let dayTotal = sales.filter(s => new Date(s.dateObj.split(',')[0]).toDateString() === d.toDateString())
+                                    .reduce((sum, order) => sum + order.total, 0);
+                data.push(dayTotal);
+            }
+
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Daily Revenue (Ks)',
+                        data: data,
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.4)' } },
+                        x: { grid: { display: false } }
+                    } 
+                }
+            });
+        }
+        
+        async function clearSalesHistory() { 
+            if(await customConfirm("GOD MODE ACTION: Factory reset ALL sales history? This cannot be undone.", "Factory Reset", "Yes, Reset All", "danger")) { 
+                sales = []; dailyTracker.count = 0; 
+                localStorage.setItem('tino_sales', JSON.stringify(sales)); localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+                syncToCloud(); renderDashboard(); 
+                showToast("System Factory Reset Complete", "info");
+            } 
+        }
+
+        function renderMenuManager() {
+            const q = (document.getElementById('menu-manager-search')?.value || "").toLowerCase();
+            let html = "";
+            menu.forEach((item, i) => {
+                if (q === "" || item.name.toLowerCase().includes(q) || (item.code&&item.code.toLowerCase().includes(q)) || item.cat.toLowerCase().includes(q)) {
+                    const thumbnailHtml = item.img ? `<img src="${item.img}" class="w-16 h-16 rounded-xl object-cover shadow-md ml-4">` : '';
+                    html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-between transform transition hover:-translate-y-1 font-sans">
+                                <div class="mb-4"><div class="flex justify-between items-start mb-2"><span class="bg-sky-500/20 text-sky-700 text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">${item.cat} ${item.subcat?`> ${item.subcat}`:''}</span>${item.code?`<span class="text-xs font-mono text-slate-400 border border-slate-300 px-1 rounded">${item.code}</span>`:''}</div><div class="flex justify-between items-center mt-3"><div><h4 class="text-xl font-bold text-slate-800">${item.name}</h4><p class="text-sky-600 font-black text-lg mt-1">${item.price.toLocaleString()} Ks</p></div>${thumbnailHtml}</div></div>
+                                <div class="flex gap-2 border-t border-white/40 pt-4"><button type="button" onclick="editMenu(${i}); playClick()" class="flex-1 bg-white/50 text-slate-700 py-2 rounded-lg font-bold hover:bg-white transition active:scale-95">Edit</button><button type="button" onclick="deleteMenu(${i}); playClick()" class="flex-1 bg-red-500/20 text-red-600 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition active:scale-95">Delete</button></div>
+                             </div>`;
+                }
+            });
+            document.getElementById('manager-menu-list').innerHTML = html || `<div class="col-span-full text-center text-slate-500 italic mt-10">No items found</div>`;
+            renderPOSMenu(); localStorage.setItem('tino_menu', JSON.stringify(menu));
+        }
+        
+        function openMenuModal() { document.getElementById('modal-title').innerText = "Add Menu Item"; document.getElementById('edit-index').value = ""; document.getElementById('menu-name').value = ""; document.getElementById('menu-price').value = ""; document.getElementById('menu-code').value = ""; document.getElementById('menu-cat').value = ""; document.getElementById('menu-subcat').value = ""; document.getElementById('menu-img').value = ""; document.getElementById('menu-modal').classList.remove('hidden'); }
+        function closeMenuModal() { document.getElementById('menu-modal').classList.add('hidden'); }
+        
+        function saveMenuItem() { 
+            const name = document.getElementById('menu-name').value; const price = parseInt(document.getElementById('menu-price').value); const code = document.getElementById('menu-code').value.trim(); const cat = document.getElementById('menu-cat').value || "Uncategorized"; const subcat = document.getElementById('menu-subcat').value.trim(); const img = document.getElementById('menu-img').value.trim(); const index = document.getElementById('edit-index').value; 
+            if (!name || isNaN(price)) return showToast("Invalid Name or Price", "error"); 
+            index === "" ? menu.push({ name, price, code, cat, subcat, img }) : menu[index] = { name, price, code, cat, subcat, img }; 
+            closeMenuModal(); renderMenuManager(); syncToCloud(); showToast("Menu Updated", "success");
+        }
+        
+        function editMenu(index) { const i = menu[index]; document.getElementById('modal-title').innerText = "Edit Item"; document.getElementById('menu-name').value = i.name; document.getElementById('menu-price').value = i.price; document.getElementById('menu-code').value = i.code||''; document.getElementById('menu-cat').value = i.cat; document.getElementById('menu-subcat').value = i.subcat||''; document.getElementById('menu-img').value = i.img||''; document.getElementById('edit-index').value = index; document.getElementById('menu-modal').classList.remove('hidden'); }
+        
+        async function deleteMenu(index) { 
+            if(await customConfirm(`Delete ${menu[index].name} from the menu?`, "Delete Item", "Delete", "danger")) { 
+                menu.splice(index, 1); renderMenuManager(); syncToCloud(); showToast("Item Deleted", "info"); 
+            } 
+        }
+
+        function printZReport() {
+            if(sales.length === 0) return showToast("No sales recorded today.", "error");
+            const totalRev = sales.reduce((s, o) => s + o.total, 0);
+            document.getElementById('z-report-date').innerText = "Printed: " + new Date().toLocaleString();
+            document.getElementById('z-report-stats').innerHTML = `<div class="flex justify-between"><span>Total Orders:</span><span>${sales.length}</span></div><div class="flex justify-between font-black text-lg mt-2 pt-2 border-t border-dashed border-black"><span>NET SALES:</span><span>${totalRev.toLocaleString()} Ks</span></div>`;
+            executePrint('z-report-area', async () => {
+                if(await customConfirm("Z-Report Printed successfully! \n\nDo you want to archive today's sales data from the active POS cache?", "Archive Sales", "Archive", "info")) {
+                    showToast("Z-Report Logged in System.", "info"); 
+                } 
+            });
+        }
+
+        function exportToExcel() {
+            if(sales.length === 0) return showToast("No data to export.", "error");
+            let csv = "Date,Time,OrderNo,Table,Items,Tax %,Discount %,Total (Ks)\n";
+            sales.forEach(s => { csv += `"${s.dateObj.split(',')[0]}","${s.time}","${s.orderNo||''}","${s.table}","${s.items}",${s.appliedTax},${s.appliedDiscount},${s.total}\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `Sales_Export_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            showToast("CSV Downloaded", "success");
+        }
+
+        function backupDB() {
+            const db = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs };
+            const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `GoodCool_Backup_${Date.now()}.json`; link.click();
+            showToast("Database Backup Created", "success");
+        }
+        function restoreDB(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const db = JSON.parse(e.target.result);
+                    if(db.config) appConfig = db.config; if(db.menu) menu = db.menu; if(db.tables) tables = db.tables; if(db.sales) sales = db.sales; if(db.tabs) openTabs = db.tabs; if(db.queue) queueList = db.queue; if(db.tracker) dailyTracker = db.tracker; if(db.shifts) shiftLogs = db.shifts;
+                    syncToCloud(); showToast("Database Restored Successfully! Reloading...", "success"); setTimeout(() => location.reload(), 1500);
+                } catch(err) { showToast("Invalid Backup File!", "error"); }
+            }; reader.readAsText(file);
+        }
+
+        // Astero Game
+        let gameLoop; const canvas = document.getElementById('game-canvas'); const ctx = canvas.getContext('2d');
+        let gameScore = 0; let player = { x: 200, y: 550, size: 20 }; let bullets = []; let enemies = []; let particles = []; let isGameRunning = false; let targetX = 200;
+        
+        function startMiniGame() {
+            document.getElementById('game-layer').classList.remove('hidden'); document.getElementById('game-layer').classList.add('flex');
+            gameScore = 0; bullets = []; enemies = []; particles = []; player.x = canvas.width / 2; isGameRunning = true; document.getElementById('game-score').innerText = gameScore;
+            setInterval(() => { if(isGameRunning) { bullets.push({ x: player.x, y: player.y - 10, speed: 8 }); const sfx = document.getElementById('sfx-laser'); sfx.volume = 0.2; sfx.currentTime = 0; sfx.play().catch(()=>{}); } }, 150);
+            setInterval(() => { if(isGameRunning) enemies.push({ x: Math.random() * (canvas.width - 30) + 15, y: -20, size: Math.random() * 20 + 15, speed: Math.random() * 2 + 1 }); }, 800);
+            requestAnimationFrame(updateGame);
+        }
+
+        function closeMiniGame() { document.getElementById('game-layer').classList.add('hidden'); document.getElementById('game-layer').classList.remove('flex'); isGameRunning = false; }
+        canvas.addEventListener('mousemove', (e) => { const rect = canvas.getBoundingClientRect(); targetX = e.clientX - rect.left; });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); const rect = canvas.getBoundingClientRect(); targetX = e.touches[0].clientX - rect.left; }, {passive: false});
+
+        function updateGame() {
+            if(!isGameRunning) return;
+            ctx.fillStyle = "rgba(0, 0, 0, 0.3)"; ctx.fillRect(0, 0, canvas.width, canvas.height); player.x += (targetX - player.x) * 0.1;
+            ctx.fillStyle = "#0ea5e9"; ctx.beginPath(); ctx.moveTo(player.x, player.y - player.size); ctx.lineTo(player.x - player.size, player.y + player.size); ctx.lineTo(player.x + player.size, player.y + player.size); ctx.fill();
+            ctx.fillStyle = "#fbbf24";
+            for(let i = bullets.length - 1; i >= 0; i--) { let b = bullets[i]; b.y -= b.speed; ctx.fillRect(b.x - 2, b.y, 4, 12); if(b.y < 0) bullets.splice(i, 1); }
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i]; e.y += e.speed; ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2); ctx.fill();
+                if(e.y > canvas.height) { enemies.splice(i, 1); continue; }
+                for(let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j]; let dist = Math.hypot(b.x - e.x, b.y - e.y);
+                    if(dist < e.size) {
+                        gameScore += 10; document.getElementById('game-score').innerText = gameScore;
+                        for(let p=0; p<5; p++) particles.push({ x: e.x, y: e.y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, life: 1 });
+                        enemies.splice(i, 1); bullets.splice(j, 1); break;
+                    }
+                }
+            }
+            for(let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.05; ctx.fillStyle = `rgba(239, 68, 68, ${p.life})`; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1);
+            }
+            requestAnimationFrame(updateGame);
+        }
+    </script>
+</body>
+</html>
