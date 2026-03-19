@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Good Cool & Bakery POS | Master Build v11</title>
+    <title>Good Cool & Bakery POS | Master Build v13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -111,9 +111,68 @@
         </div>
     </div>
 
+    <div id="expense-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-opacity">
+        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-md shadow-2xl transform transition-all animate-pop-in">
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Log Petty Cash</h3>
+            <p class="text-slate-600 text-sm mb-6 font-medium">Record money taken out of the cash drawer.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm font-bold text-slate-600 ml-1">Amount (Ks)</label>
+                    <input type="number" id="exp-amount" placeholder="e.g. 5000" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-400 font-black text-xl text-slate-800">
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-slate-600 ml-1">Category</label>
+                    <select id="exp-cat" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 cursor-pointer">
+                        <option value="Supplies / Ingredients">Supplies / Ingredients</option>
+                        <option value="Delivery Fee">Delivery Fee</option>
+                        <option value="Customer Refund">Customer Refund</option>
+                        <option value="Staff Payout">Staff Payout</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-bold text-slate-600 ml-1">Note / Reason</label>
+                    <input type="text" id="exp-note" placeholder="e.g. Bought more ice" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-400 font-medium text-slate-800">
+                </div>
+            </div>
+            
+            <div class="flex gap-3 pt-6 mt-2 border-t border-slate-200/50">
+                <button type="button" onclick="closeExpenseModal(); playClick()" class="flex-1 bg-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
+                <button type="button" onclick="saveExpense(); playClick()" class="flex-[2] bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/30 transition active:scale-95">Log Expense</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="blind-count-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-opacity">
+        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-md shadow-2xl transform transition-all animate-pop-in">
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Blind Cash Count</h3>
+            <p class="text-slate-600 text-sm mb-6 font-medium">Count the physical cash in the drawer and enter it below to generate the Z-Report audit.</p>
+            
+            <div>
+                <label class="text-sm font-bold text-slate-600 ml-1">Actual Cash in Drawer (Ks)</label>
+                <input type="number" id="actual-cash-count" placeholder="e.g. 150000" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-black text-xl text-slate-800">
+            </div>
+            
+            <div class="flex gap-3 pt-6 mt-4 border-t border-slate-200/50">
+                <button type="button" onclick="closeBlindCountModal(); playClick()" class="flex-1 bg-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
+                <button type="button" onclick="processZReportWithCount(); playClick()" class="flex-[2] bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 shadow-lg shadow-slate-500/30 transition active:scale-95">Submit & Print</button>
+            </div>
+        </div>
+    </div>
+
     <div id="success-overlay" class="fixed inset-0 z-[300] bg-gradient-to-br from-sky-400 to-indigo-600 flex flex-col items-center justify-center transition-all duration-500 opacity-0 pointer-events-none transform scale-110">
         <div class="text-white text-8xl mb-6 animate-bounce">🖨️</div>
         <h2 class="text-5xl font-black text-white tracking-widest drop-shadow-lg text-center" id="overlay-text">PRINTING...</h2>
+    </div>
+
+    <div id="game-layer" class="fixed inset-0 z-[9999] bg-slate-900 hidden flex-col items-center justify-center">
+        <div class="absolute top-4 w-full px-8 flex justify-between items-center max-w-2xl mx-auto">
+            <h1 class="text-sky-400 font-black text-2xl tracking-widest uppercase" style="font-family: 'Courier New', monospace;">ASTERO LITE</h1>
+            <span class="text-white font-mono text-xl bg-slate-800 px-4 py-2 rounded-lg border border-slate-600">SCORE: <span id="game-score">0</span></span>
+            <button onclick="closeMiniGame()" class="bg-red-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)]">Exit</button>
+        </div>
+        <canvas id="game-canvas" class="bg-black rounded-xl shadow-[0_0_50px_rgba(14,165,233,0.3)] border border-slate-700 mt-12 cursor-crosshair"></canvas>
     </div>
 
     <div id="login-layer">
@@ -328,17 +387,20 @@
                     <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Sales Overview</h2>
                     <p class="text-sm font-bold text-slate-500 mt-1">Real-time revenue tracking</p>
                 </div>
-                <button type="button" onclick="exportToExcel()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2">📊 Export CSV</button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button type="button" onclick="openExpenseModal()" class="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-red-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2">💸 Log Expense</button>
+                    <button type="button" onclick="exportToExcel()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2">📊 Export CSV</button>
+                </div>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
                 <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl transition-all group-hover:bg-emerald-400/40"></div>
                     <div class="flex justify-between items-start mb-4">
                         <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Today's Revenue</p>
                         <span class="text-2xl drop-shadow-sm">💰</span>
                     </div>
-                    <h3 class="text-3xl xl:text-4xl font-black text-slate-800 tracking-tight"><span id="dash-rev-today">0</span> <span class="text-lg text-emerald-600">Ks</span></h3>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-rev-today">0</span> <span class="text-sm text-emerald-600">Ks</span></h3>
                 </div>
                 <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-sky-400/20 rounded-full blur-2xl transition-all group-hover:bg-sky-400/40"></div>
@@ -346,7 +408,7 @@
                         <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">7-Day Revenue</p>
                         <span class="text-2xl drop-shadow-sm">📈</span>
                     </div>
-                    <h3 class="text-3xl xl:text-4xl font-black text-slate-800 tracking-tight"><span id="dash-rev-week">0</span> <span class="text-lg text-sky-600">Ks</span></h3>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-rev-week">0</span> <span class="text-sm text-sky-600">Ks</span></h3>
                 </div>
                 <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-400/20 rounded-full blur-2xl transition-all group-hover:bg-purple-400/40"></div>
@@ -354,7 +416,15 @@
                         <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">30-Day Revenue</p>
                         <span class="text-2xl drop-shadow-sm">🏆</span>
                     </div>
-                    <h3 class="text-3xl xl:text-4xl font-black text-slate-800 tracking-tight"><span id="dash-rev-month">0</span> <span class="text-lg text-purple-600">Ks</span></h3>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-rev-month">0</span> <span class="text-sm text-purple-600">Ks</span></h3>
+                </div>
+                <div class="bg-gradient-to-br from-red-50/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-red-100 relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 w-24 h-24 bg-red-400/20 rounded-full blur-2xl transition-all group-hover:bg-red-400/40"></div>
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-red-700 font-bold uppercase tracking-widest text-xs">Today's Expenses</p>
+                        <span class="text-2xl drop-shadow-sm">💸</span>
+                    </div>
+                    <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-exp-today">0</span> <span class="text-sm text-red-600">Ks</span></h3>
                 </div>
             </div>
 
@@ -364,18 +434,18 @@
             
             <div class="glass-panel p-0 rounded-3xl overflow-hidden flex-1 flex flex-col border border-white/60 shadow-xl">
                 <div class="bg-white/40 p-6 border-b border-white/50 flex justify-between items-center">
-                    <h4 class="font-black text-xl text-slate-800">Recent Transactions</h4>
-                    <span class="text-[10px] sm:text-xs font-bold bg-white/60 text-slate-600 px-3 py-1 rounded-full border border-white/80 whitespace-nowrap">Last 50 orders</span>
+                    <h4 class="font-black text-xl text-slate-800">Recent Transactions & Expenses</h4>
+                    <span class="text-[10px] sm:text-xs font-bold bg-white/60 text-slate-600 px-3 py-1 rounded-full border border-white/80 whitespace-nowrap">Latest 50</span>
                 </div>
                 <div class="overflow-x-auto flex-1 p-2">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-slate-500 text-xs uppercase tracking-widest border-b border-slate-200/50">
+                                <th class="p-4 font-bold">Type</th>
                                 <th class="p-4 font-bold">Time & Date</th>
                                 <th class="p-4 font-bold">Details</th>
-                                <th class="p-4 font-bold hidden md:table-cell">Items</th>
-                                <th class="p-4 font-bold">Amount</th>
-                                <th class="p-4 font-bold text-right">Receipt</th>
+                                <th class="p-4 font-bold hidden md:table-cell">Items / Notes</th>
+                                <th class="p-4 font-bold text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody id="dash-history" class="divide-y divide-slate-200/50"></tbody>
@@ -555,6 +625,7 @@
         let tables = JSON.parse(localStorage.getItem('tino_tables')) || ['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Takeaway'];
         let sales = JSON.parse(localStorage.getItem('tino_sales')) || [];
         let openTabs = JSON.parse(localStorage.getItem('tino_tabs')) || {}; 
+        let expenses = JSON.parse(localStorage.getItem('tino_expenses')) || []; 
         
         let queueList = JSON.parse(localStorage.getItem('tino_queue')) || [];
         let dailyTracker = JSON.parse(localStorage.getItem('tino_tracker')) || { date: new Date().toLocaleDateString(), count: 0 };
@@ -583,7 +654,7 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'scale-95');
                 setTimeout(() => toast.remove(), 300);
-            }, 3000); // Disappears after 3 seconds
+            }, 3000);
         }
 
         // 🛑 Promise-Based Custom Confirm Modal
@@ -634,13 +705,104 @@
             });
         }
 
+        // 💸 PETTY CASH LOGIC
+        function openExpenseModal() {
+            document.getElementById('exp-amount').value = "";
+            document.getElementById('exp-note').value = "";
+            document.getElementById('expense-modal').classList.remove('hidden');
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expense-modal').classList.add('hidden');
+        }
+
+        function saveExpense() {
+            const amount = parseInt(document.getElementById('exp-amount').value);
+            const cat = document.getElementById('exp-cat').value;
+            const note = document.getElementById('exp-note').value.trim();
+            
+            if(!amount || isNaN(amount) || amount <= 0) return showToast("Enter a valid amount", "error");
+            
+            expenses.push({
+                id: Date.now(),
+                time: new Date().toLocaleTimeString(),
+                dateObj: new Date().toLocaleString(),
+                amount: amount,
+                category: cat,
+                note: note,
+                user: currentUsername
+            });
+            
+            localStorage.setItem('tino_expenses', JSON.stringify(expenses));
+            syncToCloud();
+            closeExpenseModal();
+            renderDashboard();
+            showToast("Expense Logged into System", "success");
+            notifyOS('Expense Logged', `${amount.toLocaleString()} Ks taken for ${cat}`);
+        }
+
+        // 🔒 BLIND CASH COUNT LOGIC
+        function printZReport() {
+            const todayStr = new Date().toLocaleDateString();
+            const todaySales = sales.filter(s => new Date(s.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
+            const todayExp = expenses.filter(e => new Date(e.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
+            
+            if(todaySales.length === 0 && todayExp.length === 0) return showToast("No sales or expenses recorded today.", "error");
+
+            document.getElementById('actual-cash-count').value = "";
+            document.getElementById('blind-count-modal').classList.remove('hidden');
+        }
+
+        function closeBlindCountModal() {
+            document.getElementById('blind-count-modal').classList.add('hidden');
+        }
+
+        function processZReportWithCount() {
+            const actualCashInput = document.getElementById('actual-cash-count').value;
+            if(!actualCashInput || isNaN(actualCashInput) || actualCashInput < 0) {
+                return showToast("Please enter a valid cash amount.", "error");
+            }
+            const actualCash = parseInt(actualCashInput);
+
+            const todayStr = new Date().toLocaleDateString();
+            const todaySales = sales.filter(s => new Date(s.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
+            const todayExp = expenses.filter(e => new Date(e.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
+            
+            const totalRev = todaySales.reduce((s, o) => s + o.total, 0);
+            const totalExp = todayExp.reduce((s, e) => s + e.amount, 0);
+            const expectedCash = totalRev - totalExp;
+            const difference = actualCash - expectedCash;
+
+            document.getElementById('z-report-date').innerText = "Printed: " + new Date().toLocaleString();
+            
+            let diffColor = difference >= 0 ? "text-emerald-600" : "text-red-600";
+            let diffSign = difference > 0 ? "+" : "";
+
+            let htmlStr = `<div class="flex justify-between"><span>Total Orders:</span><span>${todaySales.length}</span></div>`;
+            htmlStr += `<div class="flex justify-between mt-2 pt-2 border-t border-dashed border-gray-400 font-bold"><span>GROSS SALES:</span><span>${totalRev.toLocaleString()} Ks</span></div>`;
+            htmlStr += `<div class="flex justify-between text-red-600 font-bold"><span>TOTAL EXPENSES:</span><span>-${totalExp.toLocaleString()} Ks</span></div>`;
+            htmlStr += `<div class="flex justify-between font-black text-lg mt-2 pt-2 border-t border-dashed border-black"><span>EXPECTED CASH:</span><span>${expectedCash.toLocaleString()} Ks</span></div>`;
+            
+            htmlStr += `<div class="flex justify-between font-black text-lg mt-2 pt-2 border-t border-dashed border-black"><span>ACTUAL COUNT:</span><span>${actualCash.toLocaleString()} Ks</span></div>`;
+            htmlStr += `<div class="flex justify-between font-black text-lg ${diffColor}"><span>DIFFERENCE:</span><span>${diffSign}${difference.toLocaleString()} Ks</span></div>`;
+            
+            document.getElementById('z-report-stats').innerHTML = htmlStr;
+
+            closeBlindCountModal();
+
+            executePrint('z-report-area', async () => {
+                if(await customConfirm("Z-Report Printed successfully! \n\nDo you want to archive today's sales data from the active POS cache?", "Archive Sales", "Archive", "info")) {
+                    showToast("Z-Report Logged in System.", "info"); 
+                } 
+            });
+        }
+
         // 🖥️ DEEP SOVEREIGN OS INTEGRATION
         function notifyOS(title, message) {
             if (window !== window.top) {
-                // Send payload up to Sovereign Kernel
                 window.parent.postMessage({ type: 'SOVEREIGN_NOTIFY', title: title, message: message }, '*');
             } else {
-                showToast(`${title}: ${message}`, 'info'); // Fallback when running native web
+                showToast(`${title}: ${message}`, 'info'); 
             }
         }
 
@@ -648,8 +810,7 @@
             console.log("🖥️ Sovereign OS Environment Detected");
             document.body.style.borderRadius = "0px"; 
             document.body.style.background = "rgba(255, 255, 255, 0.1)"; 
-            // Handshake with Sovereign OS Kernel
-            window.parent.postMessage({ type: 'SOVEREIGN_APP_READY', appName: 'GoodCool POS', version: 'v11' }, '*');
+            window.parent.postMessage({ type: 'SOVEREIGN_APP_READY', appName: 'GoodCool POS', version: 'v13' }, '*');
         }
 
         // 🔐 ANDROID-STYLE PATTERN LOCK LOGIC
@@ -742,7 +903,6 @@
 
         function resetPattern() { patternNodes = []; patternSvg.innerHTML = ''; dots.forEach(d => d.classList.remove('active', 'error')); }
 
-        // 🔒 FAST-SWITCH PIN PAD (Lock Screen Shortcuts fallback)
         document.addEventListener('keydown', (e) => {
             const loginLayer = document.getElementById('login-layer');
             
@@ -767,7 +927,7 @@
 
         async function syncToCloud() {
             if (!window.db || isSyncingFromCloud) return;
-            const dataToSync = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs };
+            const dataToSync = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses };
             try {
                 await window.fbSetDoc(window.fbDoc(window.db, "goodcool_pos", "master_state"), dataToSync);
                 document.getElementById('cloud-status').classList.remove('hidden');
@@ -789,6 +949,7 @@
                     if(cloudData.queue) queueList = cloudData.queue;
                     if(cloudData.tracker) dailyTracker = cloudData.tracker;
                     if(cloudData.shifts) shiftLogs = cloudData.shifts;
+                    if(cloudData.expenses) expenses = cloudData.expenses;
 
                     localStorage.setItem('tino_config', JSON.stringify(appConfig));
                     localStorage.setItem('tino_menu', JSON.stringify(menu));
@@ -798,6 +959,7 @@
                     localStorage.setItem('tino_queue', JSON.stringify(queueList));
                     localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
                     localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs));
+                    localStorage.setItem('tino_expenses', JSON.stringify(expenses));
 
                     applyCustomStyling(); loadSettingsUI(); renderTableManager(); renderMenuManager(); renderDashboard(); renderCart(); renderQueue(); renderWorkspace();
                     
@@ -821,7 +983,6 @@
                 localStorage.setItem('tino_queue', JSON.stringify(queueList));
             }
 
-            // 📶 BULLETPROOF OFFLINE MODE (Blob Service Worker)
             if ('serviceWorker' in navigator) {
                 const swCode = `
                     const CACHE_NAME = 'goodcool-pos-offline-v1';
@@ -868,7 +1029,6 @@
 
         function toggleMobileMenu() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); playClick(); }
 
-        // 📱 Table-Side Waiter Cart Toggle
         function toggleMobileCart() {
             const cartArea = document.getElementById('receipt-area');
             cartArea.classList.toggle('mobile-open');
@@ -1100,13 +1260,49 @@
         function renderPOSMenu() {
             if(document.getElementById('pos-search').value.trim() !== "") return;
             const grid = document.getElementById('pos-menu-grid');
+            const headerTitle = document.getElementById('pos-header-title');
+
             if (!currentCat) {
-                const categories = [...new Set(menu.map(item => item.cat))];
-                grid.innerHTML = categories.map((cat, i) => `<button type="button" onclick="currentCat='${cat}'; renderPOSMenu(); playClick()" class="glass-button p-6 rounded-2xl h-28 font-black text-slate-800 text-lg animate-pop-in">📁<br>${cat}</button>`).join('');
-            } else {
-                const items = menu.filter(item => item.cat === currentCat);
-                let html = `<button type="button" onclick="currentCat=null; renderPOSMenu(); playClick()" class="glass-button p-4 rounded-2xl h-28 bg-slate-800/5 hover:bg-slate-800/10 font-black text-slate-800">← Back</button>`;
-                html += items.map((item, i) => generateItemButton(item, i)).join('');
+                const categories = [...new Set(menu.map(item => item.cat || "Uncategorized"))];
+                grid.innerHTML = categories.map(cat => 
+                    `<button type="button" onclick="currentCat='${cat}'; currentSubcat=null; renderPOSMenu(); playClick()" class="glass-button p-6 rounded-2xl h-28 font-black text-slate-800 text-lg animate-pop-in flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md">
+                        <span class="text-3xl drop-shadow-sm">📁</span>
+                        <span class="text-center leading-tight tracking-wide">${cat}</span>
+                    </button>`
+                ).join('');
+                headerTitle.innerText = "Categories";
+            } 
+            else if (currentCat && !currentSubcat) {
+                const catItems = menu.filter(item => (item.cat || "Uncategorized") === currentCat);
+                const subcats = [...new Set(catItems.map(item => item.subcat).filter(sub => sub && sub.trim() !== ""))];
+                
+                let html = `<button type="button" onclick="currentCat=null; currentSubcat=null; renderPOSMenu(); playClick()" class="glass-button p-4 rounded-2xl h-28 bg-slate-800/5 hover:bg-slate-800/10 font-black text-slate-800 flex items-center justify-center gap-2 shadow-sm"><span class="text-2xl">⬅️</span> Back</button>`;
+                
+                if (subcats.length > 0) {
+                    html += subcats.map(sub => 
+                        `<button type="button" onclick="currentSubcat='${sub}'; renderPOSMenu(); playClick()" class="glass-button p-6 rounded-2xl h-28 font-black text-sky-800 text-lg animate-pop-in border-sky-200 bg-sky-50/70 flex flex-col items-center justify-center gap-2 shadow-sm hover:shadow-md">
+                            <span class="text-3xl drop-shadow-sm">📂</span>
+                            <span class="text-center leading-tight tracking-wide">${sub}</span>
+                        </button>`
+                    ).join('');
+                    
+                    const looseItems = catItems.filter(item => !item.subcat || item.subcat.trim() === "");
+                    html += looseItems.map((item, i) => generateItemButton(item, i)).join('');
+                    
+                    headerTitle.innerText = `${currentCat} > Sub-Categories`;
+                } else {
+                    html += catItems.map((item, i) => generateItemButton(item, i)).join('');
+                    headerTitle.innerText = currentCat;
+                }
+                grid.innerHTML = html;
+            } 
+            else if (currentCat && currentSubcat) {
+                const subcatItems = menu.filter(item => (item.cat || "Uncategorized") === currentCat && item.subcat === currentSubcat);
+                
+                let html = `<button type="button" onclick="currentSubcat=null; renderPOSMenu(); playClick()" class="glass-button p-4 rounded-2xl h-28 bg-slate-800/5 hover:bg-slate-800/10 font-black text-slate-800 flex items-center justify-center gap-2 shadow-sm"><span class="text-2xl">⬅️</span> Back</button>`;
+                html += subcatItems.map((item, i) => generateItemButton(item, i)).join('');
+                
+                headerTitle.innerText = `${currentCat} > ${currentSubcat}`;
                 grid.innerHTML = html;
             }
         }
@@ -1131,7 +1327,6 @@
             const mobileCount = document.getElementById('mobile-cart-count');
             let tab = openTabs[activeTable] || [];
             
-            // Update Mobile Drawer Count
             if(mobileCount) {
                 const totalItems = tab.reduce((sum, item) => sum + item.qty, 0);
                 mobileCount.innerText = totalItems;
@@ -1377,7 +1572,6 @@
             }, 800);
         }
 
-        // 📄 Reprint from History Logic
         function reprintReceipt(orderNo, time) {
             const order = sales.find(s => s.orderNo === orderNo && s.time === time);
             if (!order) return showToast("Order not found in memory!", "error");
@@ -1387,7 +1581,6 @@
             document.getElementById('reprint-table').innerText = order.table;
             document.getElementById('reprint-order-no').innerText = "ORDER " + (order.orderNo || '-');
             
-            // Reconstruct Items
             let itemsHtml = '';
             if (order.rawItems && order.rawItems.length > 0) {
                 itemsHtml = order.rawItems.map(item => `
@@ -1402,7 +1595,6 @@
             }
             document.getElementById('reprint-items').innerHTML = itemsHtml;
             
-            // Reconstruct Totals
             const sub = order.rawItems ? order.rawItems.reduce((sum, item) => sum + (item.price * item.qty), 0) : order.total;
             const discAmt = order.appliedDiscount > 0 ? Math.round(sub * (order.appliedDiscount / 100)) : 0;
             const taxAmt = order.appliedTax > 0 ? Math.round((sub - discAmt) * (order.appliedTax / 100)) : 0;
@@ -1414,12 +1606,10 @@
             
             document.getElementById('reprint-totals').innerHTML = totalsHtml;
 
-            // Trigger Print overlay
             const overlay = document.getElementById('success-overlay');
             document.getElementById('overlay-text').innerText = "REPRINTING..."; 
             overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
             
-            // Build ESC/POS fallback if needed
             let escposText = generateESCPOSReceiptText(order.rawItems || [], order.orderNo, false);
             escposText = "    *** REPRINT ***\n" + escposText;
             
@@ -1475,6 +1665,7 @@
             const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
             let revToday = 0, revWeek = 0, revMonth = 0;
+            let expToday = 0;
             
             sales.forEach(order => {
                 let orderDateStr = order.dateObj.split(',')[0];
@@ -1485,41 +1676,53 @@
                 if (orderDay >= lastWeek) revWeek += order.total;
                 if (orderDay >= lastMonth) revMonth += order.total;
             });
+            
+            expenses.forEach(exp => {
+                let expDate = new Date(new Date(exp.dateObj.split(',')[0]).getFullYear(), new Date(exp.dateObj.split(',')[0]).getMonth(), new Date(exp.dateObj.split(',')[0]).getDate());
+                if(expDate.getTime() === today.getTime()) expToday += exp.amount;
+            });
 
             document.getElementById('dash-rev-today').innerText = revToday.toLocaleString();
             document.getElementById('dash-rev-week').innerText = revWeek.toLocaleString();
             document.getElementById('dash-rev-month').innerText = revMonth.toLocaleString();
+            document.getElementById('dash-exp-today').innerText = expToday.toLocaleString();
 
-            updateSalesChart(); // 📊 Call the new Chart update function
+            updateSalesChart(); 
 
             const historyBody = document.getElementById('dash-history');
-            if(sales.length === 0) { historyBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 italic font-bold">No sales recorded yet.</td></tr>`; return; }
             
-            const recentSales = sales.slice(-50).reverse();
-            historyBody.innerHTML = recentSales.map((order, i) => `
-                <tr class="hover:bg-white/60 transition-colors duration-200 group">
-                    <td class="p-4 align-top whitespace-nowrap">
-                        <div class="font-bold text-slate-800">${order.time}</div>
-                        <div class="text-xs text-slate-500 font-medium mt-1">${order.dateObj.split(',')[0]}</div>
-                    </td>
-                    <td class="p-4 align-top whitespace-nowrap">
-                        <div class="font-black text-sky-700">${order.orderNo || '-'}</div>
-                        <div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${order.table}</div>
-                    </td>
-                    <td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]">
-                        <p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${order.items}</p>
-                    </td>
-                    <td class="p-4 align-top whitespace-nowrap">
-                        <div class="font-black text-emerald-600 text-lg">${order.total.toLocaleString()} Ks</div>
-                    </td>
-                    <td class="p-4 text-right align-top">
-                        <button type="button" onclick="reprintReceipt('${order.orderNo}', '${order.time}')" class="bg-white border border-slate-200 text-slate-600 hover:text-sky-600 hover:border-sky-300 hover:bg-sky-50 shadow-sm px-4 py-2 rounded-xl font-bold transition-all active:scale-95">📄 Print</button>
-                    </td>
-                </tr>
-            `).join('');
+            let combinedHistory = [];
+            sales.forEach(s => combinedHistory.push({ type: 'Sale', time: s.time, dateObj: s.dateObj, orderNo: s.orderNo, table: s.table, items: s.items, total: s.total }));
+            expenses.forEach(e => combinedHistory.push({ type: 'Expense', time: e.time, dateObj: e.dateObj, category: e.category, note: e.note, total: e.amount, user: e.user }));
+            
+            combinedHistory.sort((a, b) => new Date(a.dateObj).getTime() - new Date(b.dateObj).getTime());
+            
+            if(combinedHistory.length === 0) { historyBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 italic font-bold">No transactions recorded yet.</td></tr>`; return; }
+            
+            const recentHistory = combinedHistory.slice(-50).reverse();
+            historyBody.innerHTML = recentHistory.map((item, i) => {
+                if(item.type === 'Sale') {
+                    return `
+                    <tr class="hover:bg-white/60 transition-colors duration-200 group">
+                        <td class="p-4 align-top whitespace-nowrap"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-black uppercase">SALE</span></td>
+                        <td class="p-4 align-top whitespace-nowrap"><div class="font-bold text-slate-800">${item.time}</div><div class="text-xs text-slate-500 font-medium mt-1">${item.dateObj.split(',')[0]}</div></td>
+                        <td class="p-4 align-top whitespace-nowrap"><div class="font-black text-sky-700">${item.orderNo || '-'}</div><div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${item.table}</div></td>
+                        <td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]"><p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${item.items}</p></td>
+                        <td class="p-4 align-top text-right whitespace-nowrap"><div class="font-black text-emerald-600 text-lg">+ ${item.total.toLocaleString()} Ks</div></td>
+                    </tr>`;
+                } else {
+                    return `
+                    <tr class="hover:bg-red-50/60 transition-colors duration-200 group">
+                        <td class="p-4 align-top whitespace-nowrap"><span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-black uppercase">EXPENSE</span></td>
+                        <td class="p-4 align-top whitespace-nowrap"><div class="font-bold text-slate-800">${item.time}</div><div class="text-xs text-slate-500 font-medium mt-1">${item.dateObj.split(',')[0]}</div></td>
+                        <td class="p-4 align-top whitespace-nowrap"><div class="font-black text-red-700">${item.category}</div><div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${item.user}</div></td>
+                        <td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]"><p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${item.note}</p></td>
+                        <td class="p-4 align-top text-right whitespace-nowrap"><div class="font-black text-red-600 text-lg">- ${item.total.toLocaleString()} Ks</div></td>
+                    </tr>`;
+                }
+            }).join('');
         }
 
-        // 📊 Interactive Chart Logic
         function updateSalesChart() {
             const ctx = document.getElementById('salesChart');
             if(!ctx) return;
@@ -1565,9 +1768,11 @@
         }
         
         async function clearSalesHistory() { 
-            if(await customConfirm("GOD MODE ACTION: Factory reset ALL sales history? This cannot be undone.", "Factory Reset", "Yes, Reset All", "danger")) { 
-                sales = []; dailyTracker.count = 0; 
-                localStorage.setItem('tino_sales', JSON.stringify(sales)); localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+            if(await customConfirm("GOD MODE ACTION: Factory reset ALL sales history AND expenses? This cannot be undone.", "Factory Reset", "Yes, Reset All", "danger")) { 
+                sales = []; expenses = []; dailyTracker.count = 0; 
+                localStorage.setItem('tino_sales', JSON.stringify(sales));
+                localStorage.setItem('tino_expenses', JSON.stringify(expenses));
+                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
                 syncToCloud(); renderDashboard(); 
                 showToast("System Factory Reset Complete", "info");
             } 
@@ -1607,18 +1812,6 @@
             } 
         }
 
-        function printZReport() {
-            if(sales.length === 0) return showToast("No sales recorded today.", "error");
-            const totalRev = sales.reduce((s, o) => s + o.total, 0);
-            document.getElementById('z-report-date').innerText = "Printed: " + new Date().toLocaleString();
-            document.getElementById('z-report-stats').innerHTML = `<div class="flex justify-between"><span>Total Orders:</span><span>${sales.length}</span></div><div class="flex justify-between font-black text-lg mt-2 pt-2 border-t border-dashed border-black"><span>NET SALES:</span><span>${totalRev.toLocaleString()} Ks</span></div>`;
-            executePrint('z-report-area', async () => {
-                if(await customConfirm("Z-Report Printed successfully! \n\nDo you want to archive today's sales data from the active POS cache?", "Archive Sales", "Archive", "info")) {
-                    showToast("Z-Report Logged in System.", "info"); 
-                } 
-            });
-        }
-
         function exportToExcel() {
             if(sales.length === 0) return showToast("No data to export.", "error");
             let csv = "Date,Time,OrderNo,Table,Items,Tax %,Discount %,Total (Ks)\n";
@@ -1630,7 +1823,7 @@
         }
 
         function backupDB() {
-            const db = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs };
+            const db = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses };
             const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `GoodCool_Backup_${Date.now()}.json`; link.click();
             showToast("Database Backup Created", "success");
@@ -1641,7 +1834,7 @@
             reader.onload = function(e) {
                 try {
                     const db = JSON.parse(e.target.result);
-                    if(db.config) appConfig = db.config; if(db.menu) menu = db.menu; if(db.tables) tables = db.tables; if(db.sales) sales = db.sales; if(db.tabs) openTabs = db.tabs; if(db.queue) queueList = db.queue; if(db.tracker) dailyTracker = db.tracker; if(db.shifts) shiftLogs = db.shifts;
+                    if(db.config) appConfig = db.config; if(db.menu) menu = db.menu; if(db.tables) tables = db.tables; if(db.sales) sales = db.sales; if(db.tabs) openTabs = db.tabs; if(db.queue) queueList = db.queue; if(db.tracker) dailyTracker = db.tracker; if(db.shifts) shiftLogs = db.shifts; if(db.expenses) expenses = db.expenses;
                     syncToCloud(); showToast("Database Restored Successfully! Reloading...", "success"); setTimeout(() => location.reload(), 1500);
                 } catch(err) { showToast("Invalid Backup File!", "error"); }
             }; reader.readAsText(file);
