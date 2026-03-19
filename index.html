@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Good Cool & Bakery POS | Master Build v13</title>
+    <title>Good Cool & Bakery POS | Master Build</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB6M1qoVpm3Tn8Ro3V5pq9cRzJk49UoFTw",
@@ -22,12 +23,22 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        window.db = getFirestore(app);
-        window.fbSetDoc = setDoc;
-        window.fbDoc = doc;
-        window.fbOnSnapshot = onSnapshot;
-        
-        window.dispatchEvent(new Event('firebase-ready'));
+        const auth = getAuth(app);
+
+        // Sign in automatically to get a secure token
+        signInAnonymously(auth)
+          .then(() => {
+            console.log("🔒 Secure Connection Established");
+            
+            // Only initialize the database AFTER we have a secure token
+            window.db = initializeFirestore(app, { localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}) });
+            window.fbSetDoc = setDoc; window.fbDoc = doc; window.fbOnSnapshot = onSnapshot;
+            window.dispatchEvent(new Event('firebase-ready'));
+          })
+          .catch((error) => {
+            console.error("Auth failed:", error.message);
+            alert("Security Error: Cannot connect to database.");
+          });
     </script>
 
     <style>
@@ -41,6 +52,8 @@
         .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes slideRight { 0% { opacity: 0; transform: translateX(-20px); } 100% { opacity: 1; transform: translateX(0); } }
         .animate-slide-right { animation: slideRight 0.3s ease-out forwards; }
+        @keyframes shrink { 0% { width: 100%; } 100% { width: 0%; } }
+        .animate-shrink { animation: shrink 3s linear forwards; }
 
         .hidden { display: none !important; pointer-events: none !important; }
 
@@ -55,7 +68,6 @@
         .login-box h2 { margin: 0 0 10px; padding: 0; color: #fff; text-align: center; font-size: 24px; font-weight: bold;}
         .login-box p { margin: 0 0 20px; color: #8ec5fc; text-align: center; font-size: 14px;}
         
-        /* Pattern Lock CSS */
         #pattern-lock { touch-action: none; position: relative; width: 240px; height: 240px; margin: 0 auto; user-select: none; }
         .pattern-dot { width: 16px; height: 16px; background: #475569; border-radius: 50%; margin: auto; position: relative; transition: all 0.2s ease; z-index: 10; }
         .pattern-dot::before { content: ''; position: absolute; top: -25px; left: -25px; right: -25px; bottom: -25px; border-radius: 50%; }
@@ -66,7 +78,6 @@
         .sidebar-link:hover { background: rgba(255, 255, 255, 0.5); color: #0284c7; transform: translateX(5px); }
         .active-link { background: #0ea5e9 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); transform: translateX(5px); }
         
-        /* 📱 Mobile Table-Side Drawer CSS */
         @media (max-width: 1024px) {
             #receipt-area { display: none; } 
             #receipt-area.mobile-open { display: flex !important; position: fixed; inset: 0; z-index: 999; height: 100vh; border-radius: 0; }
@@ -95,25 +106,28 @@
 
     <div id="loader-layer"><div class="loader"></div></div>
 
-    <div id="toast-container" class="fixed bottom-5 right-5 z-[99999] flex flex-col gap-3 pointer-events-none"></div>
+    <div id="toast-container" class="fixed top-6 right-6 z-[999999] flex flex-col gap-4 pointer-events-none"></div>
 
-    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-opacity duration-300 opacity-0">
-        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-transform duration-300 scale-95" id="confirm-box">
-            <div id="confirm-icon-container" class="flex items-center justify-center w-16 h-16 rounded-full mx-auto mb-4">
-                <svg id="confirm-icon" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-[999999] p-4 opacity-0 transition-opacity duration-300">
+        <div id="confirm-box" class="bg-white/90 backdrop-blur-xl p-8 rounded-3xl w-full max-w-sm shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] border border-white/50 transform scale-95 transition-transform duration-300 flex flex-col items-center text-center">
+            
+            <div id="confirm-icon-container" class="w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                <svg id="confirm-icon" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
             </div>
-            <h3 class="text-2xl font-black text-slate-800 mb-2 text-center" id="confirm-title">Are you sure?</h3>
-            <p class="text-slate-600 text-center font-medium mb-8 text-sm" id="confirm-message">This action cannot be undone.</p>
-            <div class="flex gap-3">
-                <button type="button" id="confirm-btn-cancel" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
-                <button type="button" id="confirm-btn-ok" class="flex-1 text-white font-bold py-3 rounded-xl transition active:scale-95 shadow-lg">Confirm</button>
+            
+            <h3 id="confirm-title" class="text-2xl font-black text-slate-800 mb-2">Are you sure?</h3>
+            <p id="confirm-message" class="text-slate-500 font-medium mb-8">This action cannot be undone.</p>
+            
+            <div class="flex gap-4 w-full">
+                <button type="button" id="confirm-btn-cancel" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-2xl hover:bg-slate-200 transition active:scale-95 border border-slate-200">Cancel</button>
+                <button type="button" id="confirm-btn-ok" class="flex-1 text-white font-bold py-3 rounded-2xl transition active:scale-95 shadow-lg">Confirm</button>
             </div>
         </div>
     </div>
 
     <div id="expense-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-opacity">
         <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-md shadow-2xl transform transition-all animate-pop-in">
-            <h3 class="text-2xl font-black text-slate-800 mb-2">Log Petty Cash</h3>
+            <h3 class="text-2xl font-black text-slate-800 mb-2" data-i18n="log_exp">Log Petty Cash</h3>
             <p class="text-slate-600 text-sm mb-6 font-medium">Record money taken out of the cash drawer.</p>
             
             <div class="space-y-4">
@@ -220,20 +234,22 @@
             <div class="flex justify-between items-center mb-1">
                 <h1 class="text-2xl font-black text-slate-800 tracking-wider hidden md:block">GOOD COOL</h1>
             </div>
-            <p class="text-xs text-slate-500 mb-8 hidden md:block font-bold" id="edition-label">Edition</p>
+            <p class="text-xs text-slate-500 mb-6 hidden md:block font-bold" id="edition-label">Edition</p>
             
-            <nav class="space-y-2 mt-8 md:mt-0">
-                <div onclick="showPage('tables'); playClick()" id="link-tables" class="sidebar-link active-link"><span>🪑</span> <span>Floor Plan</span></div>
-                <div onclick="showPage('pos'); playClick()" id="link-pos" class="sidebar-link"><span>🛒</span> <span>Terminal</span></div>
-                <div onclick="showPage('queue'); playClick()" id="link-queue" class="sidebar-link"><span>🎫</span> <span>Live Queue</span></div>
-                <div onclick="showPage('work'); playClick()" id="link-work" class="sidebar-link"><span>👥</span> <span>Workspace</span></div>
-                <div onclick="showPage('dashboard'); playClick()" id="link-dashboard" class="sidebar-link"><span>📊</span> <span>Dashboard</span></div>
-                <div onclick="showPage('menu'); playClick()" id="link-menu" class="sidebar-link"><span>📋</span> <span>Menu</span></div>
-                <div onclick="showPage('settings'); playClick()" id="link-settings" class="sidebar-link"><span>⚙️</span> <span>Settings</span></div>
+            <button onclick="toggleLang()" class="w-full mb-6 py-2 bg-slate-800 text-white font-bold rounded-xl shadow-md hover:bg-slate-700 transition-all active:scale-95">🌐 EN / မြန်မာ</button>
+            
+            <nav class="space-y-2">
+                <div onclick="showPage('tables'); playClick()" id="link-tables" class="sidebar-link active-link"><span>🪑</span> <span data-i18n="nav_tables">Floor Plan</span></div>
+                <div onclick="showPage('pos'); playClick()" id="link-pos" class="sidebar-link"><span>🛒</span> <span data-i18n="nav_pos">Terminal</span></div>
+                <div onclick="showPage('queue'); playClick()" id="link-queue" class="sidebar-link"><span>🎫</span> <span data-i18n="nav_queue">Live Queue</span></div>
+                <div onclick="showPage('work'); playClick()" id="link-work" class="sidebar-link"><span>👥</span> <span data-i18n="nav_work">Workspace</span></div>
+                <div onclick="showPage('dashboard'); playClick()" id="link-dashboard" class="sidebar-link"><span>📊</span> <span data-i18n="nav_dash">Dashboard</span></div>
+                <div onclick="showPage('menu'); playClick()" id="link-menu" class="sidebar-link"><span>📋</span> <span data-i18n="nav_menu">Menu</span></div>
+                <div onclick="showPage('settings'); playClick()" id="link-settings" class="sidebar-link"><span>⚙️</span> <span data-i18n="nav_settings">Settings</span></div>
             </nav>
         </div>
         <div class="mt-auto p-6 border-t border-white/40">
-            <button onclick="location.reload()" class="w-full py-3 bg-red-500/20 text-red-600 font-bold rounded-xl hover:bg-red-500 hover:text-white transition-all transform active:scale-95">Log Out</button>
+            <button onclick="location.reload()" class="w-full py-3 bg-red-500/20 text-red-600 font-bold rounded-xl hover:bg-red-500 hover:text-white transition-all transform active:scale-95" data-i18n="logout">Log Out</button>
         </div>
     </aside>
 
@@ -241,10 +257,10 @@
         
         <section id="page-tables" class="pb-20 md:pb-0 animate-slide-right">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 glass-panel p-6 rounded-3xl">
-                <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Select Table to Order</h2>
+                <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm" data-i18n="select_table">Select Table to Order</h2>
                 <div class="flex gap-2 w-full md:w-auto" id="add-table-controls">
                     <input type="text" id="new-table-name" placeholder="e.g. VIP 1" class="flex-1 md:w-64 p-3 glass-button rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-bold">
-                    <button type="button" onclick="addTable(); playClick()" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-700 transition transform active:scale-95 shadow-lg">Add</button>
+                    <button type="button" onclick="addTable(); playClick()" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-700 transition transform active:scale-95 shadow-lg" data-i18n="add">Add</button>
                 </div>
             </div>
             <div id="manager-table-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
@@ -254,7 +270,7 @@
             <div class="lg:w-2/3 flex flex-col h-full">
                 <div class="flex flex-col mb-6 glass-panel p-4 rounded-2xl gap-4">
                     <div class="flex justify-between items-center w-full">
-                        <h2 class="text-2xl font-bold text-slate-800" id="pos-header-title">Categories</h2>
+                        <h2 class="text-2xl font-bold text-slate-800" id="pos-header-title" data-i18n="categories">Categories</h2>
                         <div class="flex items-center gap-3 flex-wrap">
                             <span id="cloud-status" class="text-xs bg-emerald-500/20 text-emerald-700 font-bold px-2 py-1 rounded hidden">☁️ Synced</span>
                             <label class="font-bold text-slate-600">Table:</label>
@@ -263,7 +279,7 @@
                     </div>
                     <div class="relative w-full">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
-                        <input type="text" id="pos-search" oninput="handleSearch()" placeholder="Search by name or code..." class="w-full py-3 pl-10 pr-4 glass-button rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-medium">
+                        <input type="text" id="pos-search" oninput="handleSearch()" data-i18n="search" placeholder="Search by name or code..." class="w-full py-3 pl-10 pr-4 glass-button rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-medium">
                     </div>
                 </div>
                 <div id="pos-menu-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto pb-4 pr-2"></div>
@@ -290,39 +306,40 @@
                 </div>
                 
                 <div class="flex justify-between w-full text-xs font-bold border-b border-slate-400 print:border-dashed print:border-black pb-1 mb-2" style="font-family: 'Courier New', Courier, monospace;">
-                    <span class="w-1/2 text-left">ITEM</span>
-                    <span class="w-1/4 text-center">QTY</span>
-                    <span class="w-1/4 text-right">PRICE</span>
+                    <span class="w-1/2 text-left" data-i18n="item">ITEM</span>
+                    <span class="w-1/4 text-center" data-i18n="qty">QTY</span>
+                    <span class="w-1/4 text-right" data-i18n="price">PRICE</span>
                 </div>
 
                 <div id="cart-list" class="flex-1 overflow-y-auto space-y-2 mb-4 pr-2" style="font-family: 'Courier New', Courier, monospace;"></div>
                 
                 <div class="pt-4 space-y-2 text-sm border-t border-slate-400 print:border-t print:border-dashed print:border-black" style="font-family: 'Courier New', Courier, monospace;">
                     <div class="flex justify-between font-semibold text-slate-800">
-                        <span>Subtotal:</span>
+                        <span data-i18n="subtotal">Subtotal:</span>
                         <span><span id="subtotal">0</span> Ks</span>
                     </div>
                     
                     <div class="flex justify-between font-semibold text-red-500" id="discount-row" style="display:none;">
-                        <div><span>Discount</span> (<span id="disc-percent">0</span>%):</div>
+                        <div><span data-i18n="discount">Discount</span> (<span id="disc-percent">0</span>%):</div>
                         <span>-<span id="disc-amt">0</span> Ks</span>
                     </div>
                     
                     <div class="flex justify-between font-semibold text-slate-800 pb-2 border-b border-slate-400 print:border-b print:border-dashed print:border-black">
-                        <div>Tax (<span id="tax-percent">5</span>%):</div>
+                        <div><span data-i18n="tax">Tax</span> (<span id="tax-percent">5</span>%):</div>
                         <span><span id="tax-amt">0</span> Ks</span>
                     </div>
                     
                     <div class="flex justify-between text-xl font-black pt-2 text-slate-900">
-                        <span>TOTAL:</span>
+                        <span data-i18n="total">TOTAL:</span>
                         <span><span id="grand-total">0</span> Ks</span>
                     </div>
                 </div>
                 
-                <div class="flex gap-2 mt-4 w-full pb-8 lg:pb-0">
-                    <button type="button" onclick="printKOT()" class="no-print flex-1 bg-amber-500 text-white py-4 rounded-xl font-black text-sm hover:bg-amber-400 shadow-lg transition-all transform active:scale-95 font-sans">🍳 KOT</button>
-                    <button type="button" onclick="saveOrder()" class="no-print flex-1 bg-emerald-500 text-white py-4 rounded-xl font-black text-sm hover:bg-emerald-400 shadow-lg transition-all transform active:scale-95 font-sans">💾 SAVE</button>
-                    <button type="button" onclick="processOrder()" class="no-print flex-[2] bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-4 rounded-xl font-black text-lg hover:opacity-90 shadow-lg transition-all transform active:scale-95 font-sans">🖨️ PAY</button>
+                <div class="grid grid-cols-2 gap-2 mt-4 w-full pb-8 lg:pb-0">
+                    <button type="button" onclick="printKOT()" class="no-print bg-amber-500 text-white py-3 rounded-xl font-black text-sm hover:bg-amber-400 shadow-lg transition-all active:scale-95" data-i18n="btn_kot">🍳 KOT</button>
+                    <button type="button" onclick="saveOrder()" class="no-print bg-emerald-500 text-white py-3 rounded-xl font-black text-sm hover:bg-emerald-400 shadow-lg transition-all active:scale-95" data-i18n="btn_save">💾 SAVE</button>
+                    <button type="button" onclick="cancelOrder()" class="no-print bg-red-500 text-white py-3 rounded-xl font-black text-sm hover:bg-red-400 shadow-lg transition-all active:scale-95" data-i18n="btn_cancel">🗑️ CANCEL</button>
+                    <button type="button" onclick="processOrder()" class="no-print bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-3 rounded-xl font-black text-lg hover:opacity-90 shadow-lg transition-all active:scale-95" data-i18n="btn_pay">🖨️ PAY</button>
                 </div>
             </div>
         </section>
@@ -349,7 +366,7 @@
                 <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Staff Workspace</h2>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="glass-panel p-6 rounded-3xl col-span-1 flex flex-col items-center justify-center border-t-8 border-t-sky-400">
                     <div class="w-24 h-24 bg-sky-100 rounded-full flex items-center justify-center text-5xl mb-4">👤</div>
                     <h3 class="text-2xl font-black text-slate-800" id="work-user-name">User</h3>
@@ -361,6 +378,12 @@
                     <p id="work-status" class="text-slate-500 font-bold mt-2 text-sm">Status: CLOCKED OUT</p>
                 </div>
                 
+                <div class="glass-panel p-6 rounded-3xl col-span-1 flex flex-col items-center justify-center border-t-8 border-t-emerald-400 bg-white/40">
+                    <div class="text-4xl mb-4 drop-shadow-sm">📈</div>
+                    <h3 class="text-lg font-bold text-slate-600 text-center">Your Sales Today</h3>
+                    <p class="text-3xl font-black text-emerald-600 mt-2 tracking-tight" id="work-personal-sales">0 Ks</p>
+                </div>
+
                 <div class="glass-panel p-6 rounded-3xl col-span-1 md:col-span-2">
                     <div class="flex justify-between items-center mb-6">
                         <h4 class="font-bold text-xl text-slate-800">Recent Shift Logs</h4>
@@ -384,12 +407,13 @@
         <section id="page-dashboard" class="hidden pb-20 md:pb-0 animate-slide-right h-full flex-col">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6 glass-panel p-6 rounded-3xl gap-4">
                 <div class="text-center sm:text-left">
-                    <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm">Sales Overview</h2>
+                    <h2 class="text-3xl font-black text-slate-800 drop-shadow-sm" data-i18n="sales_overview">Sales Overview</h2>
                     <p class="text-sm font-bold text-slate-500 mt-1">Real-time revenue tracking</p>
                 </div>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <button type="button" onclick="openExpenseModal()" class="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-red-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2">💸 Log Expense</button>
-                    <button type="button" onclick="exportToExcel()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2">📊 Export CSV</button>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-center sm:justify-end">
+                    <button type="button" onclick="openExpenseModal()" class="w-full sm:w-auto bg-gradient-to-r from-rose-500 to-red-500 text-white px-4 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2" data-i18n="log_exp">💸 Log Expense</button>
+                    <button type="button" onclick="exportToExcel()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2" data-i18n="exp_csv">📊 Export CSV</button>
+                    <button type="button" onclick="clearDashboard()" class="w-full sm:w-auto bg-gradient-to-r from-slate-600 to-slate-800 text-white px-4 py-3 rounded-xl font-bold shadow-lg hover:opacity-90 transition transform active:scale-95 flex items-center justify-center gap-2" data-i18n="clear_dash">🗑️ Clear Data</button>
                 </div>
             </div>
             
@@ -397,7 +421,7 @@
                 <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl transition-all group-hover:bg-emerald-400/40"></div>
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">Today's Revenue</p>
+                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs" data-i18n="rev_today">Today's Revenue</p>
                         <span class="text-2xl drop-shadow-sm">💰</span>
                     </div>
                     <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-rev-today">0</span> <span class="text-sm text-emerald-600">Ks</span></h3>
@@ -405,7 +429,7 @@
                 <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-sky-400/20 rounded-full blur-2xl transition-all group-hover:bg-sky-400/40"></div>
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">7-Day Revenue</p>
+                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs" data-i18n="rev_7">7-Day Revenue</p>
                         <span class="text-2xl drop-shadow-sm">📈</span>
                     </div>
                     <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-rev-week">0</span> <span class="text-sm text-sky-600">Ks</span></h3>
@@ -413,7 +437,7 @@
                 <div class="bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/60 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-400/20 rounded-full blur-2xl transition-all group-hover:bg-purple-400/40"></div>
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">30-Day Revenue</p>
+                        <p class="text-slate-500 font-bold uppercase tracking-widest text-xs" data-i18n="rev_30">30-Day Revenue</p>
                         <span class="text-2xl drop-shadow-sm">🏆</span>
                     </div>
                     <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-rev-month">0</span> <span class="text-sm text-purple-600">Ks</span></h3>
@@ -421,7 +445,7 @@
                 <div class="bg-gradient-to-br from-red-50/80 to-white/40 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-red-100 relative overflow-hidden group">
                     <div class="absolute -right-6 -top-6 w-24 h-24 bg-red-400/20 rounded-full blur-2xl transition-all group-hover:bg-red-400/40"></div>
                     <div class="flex justify-between items-start mb-4">
-                        <p class="text-red-700 font-bold uppercase tracking-widest text-xs">Today's Expenses</p>
+                        <p class="text-red-700 font-bold uppercase tracking-widest text-xs" data-i18n="exp_today">Today's Expenses</p>
                         <span class="text-2xl drop-shadow-sm">💸</span>
                     </div>
                     <h3 class="text-3xl font-black text-slate-800 tracking-tight"><span id="dash-exp-today">0</span> <span class="text-sm text-red-600">Ks</span></h3>
@@ -574,42 +598,6 @@
         </div>
     </main>
 
-    <div id="menu-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[200] p-4 transition-opacity">
-        <div class="glass-panel bg-white/80 p-8 rounded-3xl w-full max-w-md shadow-2xl transform transition-all animate-pop-in">
-            <h3 class="text-2xl font-black text-slate-800 mb-6" id="modal-title">Add Menu Item</h3>
-            <input type="hidden" id="edit-index">
-            <div class="space-y-3">
-                <div class="flex gap-2">
-                    <div class="w-2/3"><label class="text-sm font-bold text-slate-600 ml-1">Item Name</label><input type="text" id="menu-name" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
-                    <div class="w-1/3"><label class="text-sm font-bold text-slate-600 ml-1">Price</label><input type="number" id="menu-price" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
-                </div>
-                <div><label class="text-sm font-bold text-slate-600 ml-1">Image URL</label><input type="text" id="menu-img" placeholder="https://..." class="w-full p-3 mt-1 glass-button rounded-xl outline-none text-sm"></div>
-                <div><label class="text-sm font-bold text-slate-600 ml-1">Product Code</label><input type="text" id="menu-code" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
-                <div class="flex gap-2">
-                    <div class="w-1/2"><label class="text-sm font-bold text-slate-600 ml-1">Category</label><input type="text" id="menu-cat" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
-                    <div class="w-1/2"><label class="text-sm font-bold text-slate-600 ml-1">Sub-Cat</label><input type="text" id="menu-subcat" class="w-full p-3 mt-1 glass-button rounded-xl outline-none"></div>
-                </div>
-                <div class="flex gap-3 pt-4 border-t border-slate-200/50 mt-4">
-                    <button type="button" onclick="closeMenuModal(); playClick()" class="flex-1 bg-white/50 text-slate-700 font-bold py-3 rounded-xl hover:bg-white/80 transition active:scale-95">Cancel</button>
-                    <button type="button" onclick="saveMenuItem(); playClick()" class="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl hover:bg-sky-400 transition active:scale-95">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="transfer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[200] p-4 transition-opacity">
-        <div class="glass-panel bg-white/80 p-8 rounded-3xl w-full max-w-sm shadow-2xl transform transition-all animate-pop-in">
-            <h3 class="text-2xl font-black text-slate-800 mb-2">Transfer Table</h3>
-            <p class="text-slate-600 text-sm mb-6 font-bold">Moving from: <span id="transfer-from-name" class="text-sky-600"></span></p>
-            <label class="text-sm font-bold text-slate-600 ml-1">Select Destination:</label>
-            <select id="transfer-to-select" class="w-full p-3 mt-1 mb-6 glass-button rounded-xl outline-none font-bold text-slate-700 cursor-pointer"></select>
-            <div class="flex gap-3 pt-4 border-t border-slate-200/50">
-                <button type="button" onclick="closeTransferModal(); playClick()" class="flex-1 bg-white/50 text-slate-700 font-bold py-3 rounded-xl hover:bg-white/80 transition active:scale-95">Cancel</button>
-                <button type="button" onclick="executeTransfer(); playClick()" class="flex-1 bg-sky-500 text-white font-bold py-3 rounded-xl hover:bg-sky-400 transition active:scale-95">Move Order</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         let currentUserRole = 'guest';
         let currentUsername = 'Guest';
@@ -636,28 +624,118 @@
         let isSyncingFromCloud = false;
         let salesChartInstance = null;
 
+        // 🌐 i18n Translation Dictionary
+        const i18n = {
+            en: {
+                nav_tables: "Floor Plan", nav_pos: "Terminal", nav_queue: "Live Queue", nav_work: "Workspace", nav_dash: "Dashboard", nav_menu: "Menu", nav_settings: "Settings",
+                logout: "Log Out", select_table: "Select Table to Order", add: "Add", categories: "Categories", search: "Search by name or code...",
+                item: "ITEM", qty: "QTY", price: "PRICE", subtotal: "Subtotal:", discount: "Discount", tax: "Tax", total: "TOTAL:",
+                btn_kot: "🍳 KOT", btn_save: "💾 SAVE", btn_cancel: "🗑️ CANCEL", btn_pay: "🖨️ PAY",
+                sales_overview: "Sales Overview", rev_today: "Today's Revenue", rev_7: "7-Day Revenue", rev_30: "30-Day Revenue", exp_today: "Today's Expenses",
+                log_exp: "💸 Log Expense", exp_csv: "📊 Export CSV", clear_dash: "🗑️ Clear Data"
+            },
+            my: {
+                nav_tables: "စားပွဲများ", nav_pos: "အရောင်း", nav_queue: "အော်ဒါများ", nav_work: "ဝန်ထမ်းနေရာ", nav_dash: "ရောင်းအား", nav_menu: "မီနူး", nav_settings: "ဆက်တင်များ",
+                logout: "ထွက်မည်", select_table: "မှာယူရန် စားပွဲရွေးပါ", add: "ထည့်မည်", categories: "အမျိုးအစားများ", search: "အမည် (သို့) ကုဒ်ဖြင့် ရှာပါ...",
+                item: "အမည်", qty: "အရေအတွက်", price: "စျေးနှုန်း", subtotal: "သင့်ငွေ:", discount: "လျှော့စျေး", tax: "အခွန်", total: "စုစုပေါင်း:",
+                btn_kot: "🍳 မီးဖိုချောင်သို့", btn_save: "💾 သိမ်းမည်", btn_cancel: "🗑️ ဖျက်မည်", btn_pay: "🖨️ ငွေရှင်းမည်",
+                sales_overview: "ရောင်းရငွေ အနှစ်ချုပ်", rev_today: "ယနေ့ရောင်းရငွေ", rev_7: "၇ ရက်စာ ရောင်းရငွေ", rev_30: "၃၀ ရက်စာ ရောင်းရငွေ", exp_today: "ယနေ့အသုံးစရိတ်",
+                log_exp: "💸 အသုံးစရိတ် မှတ်မည်", exp_csv: "📊 CSV ထုတ်မည်", clear_dash: "🗑️ ဒေတာဖျက်မည်"
+            }
+        };
+        
+        let currentLang = localStorage.getItem('tino_lang') || 'en';
+
+        function updateLang() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) {
+                    if (el.tagName === 'INPUT' && el.placeholder) {
+                        el.placeholder = i18n[currentLang][key];
+                    } else {
+                        el.innerText = i18n[currentLang][key];
+                    }
+                }
+            });
+            localStorage.setItem('tino_lang', currentLang);
+        }
+
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'my' : 'en';
+            updateLang();
+            playClick();
+        }
+
+        for (let t in openTabs) {
+            if (Array.isArray(openTabs[t])) {
+                openTabs[t] = { items: openTabs[t], startTime: Date.now() };
+            }
+        }
+
+        function parseLocalDate(str) {
+            if(!str) return new Date();
+            let datePart = str.split(',')[0].trim();
+            let d = new Date(datePart);
+            if(!isNaN(d)) return d;
+            
+            let parts = datePart.split(/[\/\-]/);
+            if(parts.length === 3) {
+                if (parseInt(parts[0]) > 12) return new Date(parts[2], parts[1]-1, parts[0]);
+                else if (parseInt(parts[1]) > 12) return new Date(parts[2], parts[0]-1, parts[1]);
+                else return new Date(parts[2], parts[1]-1, parts[0]); 
+            }
+            return new Date();
+        }
+
         window.addEventListener('firebase-ready', () => { console.log("🔥 Firebase initialized."); });
 
-        // 🍞 Beautiful Toast Notifications
+        // 🚨 Unsaved Changes Warning hook
+        window.addEventListener('beforeunload', (e) => {
+            const hasUnsaved = Object.values(openTabs).some(t => t.items && t.items.length > 0);
+            if (hasUnsaved) {
+                e.preventDefault();
+                e.returnValue = "You have unsaved orders on tables. Are you sure you want to leave?";
+                return e.returnValue;
+            }
+        });
+
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            const icon = type === 'error' ? '❌' : type === 'info' ? 'ℹ️' : '✅';
-            const bg = type === 'error' ? 'bg-red-500' : type === 'info' ? 'bg-sky-500' : 'bg-emerald-500';
+            const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+            const colors = { success: 'bg-emerald-500', error: 'bg-rose-500', info: 'bg-sky-500' };
             
-            toast.className = `${bg} text-white px-6 py-4 rounded-2xl shadow-2xl font-bold flex items-center gap-3 transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
-            toast.innerHTML = `<span class="text-2xl">${icon}</span> <span>${message}</span>`;
+            const color = colors[type] || colors.success;
+            const icon = icons[type] || icons.success;
+            
+            toast.className = `relative overflow-hidden flex items-center gap-4 bg-white/90 backdrop-blur-xl p-4 pr-8 rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] border border-white/50 transform transition-all duration-500 translate-x-full opacity-0 pointer-events-auto min-w-[300px]`;
+            
+            toast.innerHTML = `
+                <div class="flex items-center justify-center w-10 h-10 rounded-full ${color} text-white shadow-inner text-xl">
+                    ${icon}
+                </div>
+                <div class="flex flex-col flex-1">
+                    <span class="font-black text-[10px] uppercase tracking-widest text-slate-400 mb-0.5">${type}</span>
+                    <span class="font-bold text-sm text-slate-800 leading-tight">${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 transition active:scale-90">✕</button>
+                <div class="absolute bottom-0 left-0 h-1.5 ${color} animate-shrink"></div>
+            `;
             
             container.appendChild(toast);
-            setTimeout(() => { toast.classList.remove('translate-y-10', 'opacity-0'); }, 10);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
             
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => toast.remove(), 300);
+                if(toast.parentElement) {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 500);
+                }
             }, 3000);
         }
 
-        // 🛑 Promise-Based Custom Confirm Modal
         function customConfirm(message, title = "Confirm Action", confirmText = "Confirm", type = "danger") {
             return new Promise((resolve) => {
                 const modal = document.getElementById('confirm-modal');
@@ -705,7 +783,6 @@
             });
         }
 
-        // 💸 PETTY CASH LOGIC
         function openExpenseModal() {
             document.getElementById('exp-amount').value = "";
             document.getElementById('exp-note').value = "";
@@ -725,6 +802,7 @@
             
             expenses.push({
                 id: Date.now(),
+                timestamp: Date.now(),
                 time: new Date().toLocaleTimeString(),
                 dateObj: new Date().toLocaleString(),
                 amount: amount,
@@ -741,11 +819,14 @@
             notifyOS('Expense Logged', `${amount.toLocaleString()} Ks taken for ${cat}`);
         }
 
-        // 🔒 BLIND CASH COUNT LOGIC
         function printZReport() {
-            const todayStr = new Date().toLocaleDateString();
-            const todaySales = sales.filter(s => new Date(s.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
-            const todayExp = expenses.filter(e => new Date(e.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
+            const nowMs = Date.now();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStart = today.getTime();
+
+            const todaySales = sales.filter(s => (s.timestamp || 0) >= todayStart);
+            const todayExp = expenses.filter(e => (e.timestamp || 0) >= todayStart);
             
             if(todaySales.length === 0 && todayExp.length === 0) return showToast("No sales or expenses recorded today.", "error");
 
@@ -764,9 +845,13 @@
             }
             const actualCash = parseInt(actualCashInput);
 
-            const todayStr = new Date().toLocaleDateString();
-            const todaySales = sales.filter(s => new Date(s.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
-            const todayExp = expenses.filter(e => new Date(e.dateObj.split(',')[0]).toLocaleDateString() === todayStr);
+            const nowMs = Date.now();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStart = today.getTime();
+
+            const todaySales = sales.filter(s => (s.timestamp || 0) >= todayStart);
+            const todayExp = expenses.filter(e => (e.timestamp || 0) >= todayStart);
             
             const totalRev = todaySales.reduce((s, o) => s + o.total, 0);
             const totalExp = todayExp.reduce((s, e) => s + e.amount, 0);
@@ -797,7 +882,6 @@
             });
         }
 
-        // 🖥️ DEEP SOVEREIGN OS INTEGRATION
         function notifyOS(title, message) {
             if (window !== window.top) {
                 window.parent.postMessage({ type: 'SOVEREIGN_NOTIFY', title: title, message: message }, '*');
@@ -810,10 +894,9 @@
             console.log("🖥️ Sovereign OS Environment Detected");
             document.body.style.borderRadius = "0px"; 
             document.body.style.background = "rgba(255, 255, 255, 0.1)"; 
-            window.parent.postMessage({ type: 'SOVEREIGN_APP_READY', appName: 'GoodCool POS', version: 'v13' }, '*');
+            window.parent.postMessage({ type: 'SOVEREIGN_APP_READY', appName: 'GoodCool POS', version: 'v16' }, '*');
         }
 
-        // 🔐 ANDROID-STYLE PATTERN LOCK LOGIC
         let patternNodes = [];
         let isDrawingPattern = false;
         let patternSvg = document.getElementById('pattern-lines');
@@ -945,7 +1028,12 @@
                     if(cloudData.menu) menu = cloudData.menu;
                     if(cloudData.tables) tables = cloudData.tables;
                     if(cloudData.sales) sales = cloudData.sales;
-                    if(cloudData.tabs) openTabs = cloudData.tabs;
+                    if(cloudData.tabs) {
+                        openTabs = cloudData.tabs;
+                        for (let t in openTabs) {
+                            if (Array.isArray(openTabs[t])) openTabs[t] = { items: openTabs[t], startTime: Date.now() };
+                        }
+                    }
                     if(cloudData.queue) queueList = cloudData.queue;
                     if(cloudData.tracker) dailyTracker = cloudData.tracker;
                     if(cloudData.shifts) shiftLogs = cloudData.shifts;
@@ -961,7 +1049,7 @@
                     localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs));
                     localStorage.setItem('tino_expenses', JSON.stringify(expenses));
 
-                    applyCustomStyling(); loadSettingsUI(); renderTableManager(); renderMenuManager(); renderDashboard(); renderCart(); renderQueue(); renderWorkspace();
+                    applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderCart(); renderQueue(); renderWorkspace();
                     
                     document.getElementById('cloud-status').classList.remove('hidden');
                     isSyncingFromCloud = false;
@@ -983,21 +1071,11 @@
                 localStorage.setItem('tino_queue', JSON.stringify(queueList));
             }
 
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-                    const CACHE_NAME = 'goodcool-pos-offline-v1';
-                    self.addEventListener('install', e => {
-                        e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([location.href])));
-                    });
-                    self.addEventListener('fetch', e => {
-                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(blob))
-                    .then(() => console.log('🛡️ Bulletproof Offline Cache Active'))
-                    .catch(err => console.warn('Offline cache failed:', err));
-            }
+            setInterval(() => {
+                if(document.getElementById('page-tables') && !document.getElementById('page-tables').classList.contains('hidden')) {
+                    renderTableManager();
+                }
+            }, 30000);
 
             window.addEventListener('online', () => {
                 let statusBadge = document.getElementById('cloud-status');
@@ -1011,7 +1089,7 @@
                 statusBadge.innerText = '🚫 Offline Mode';
                 statusBadge.className = 'text-xs bg-red-500/20 text-red-700 font-bold px-2 py-1 rounded';
                 statusBadge.classList.remove('hidden');
-                showToast("Lost Internet Connection. Running Offline.", "error");
+                showToast("Lost Internet Connection. Running Locally Offline.", "error");
             });
         });
 
@@ -1036,8 +1114,8 @@
         }
 
         function initApp() {
-            if(!openTabs[activeTable]) openTabs[activeTable] = [];
-            applyCustomStyling(); loadSettingsUI(); renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace();
+            if(!openTabs[activeTable]) openTabs[activeTable] = { items: [], startTime: Date.now() };
+            applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace();
             document.getElementById('pos-table-select').innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join('');
             switchTable(tables[0]);
             initFirebaseListener();
@@ -1129,6 +1207,15 @@
                 status.className = "text-slate-500 font-bold mt-2 text-sm";
             }
 
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            
+            const mySales = sales.filter(s => {
+                return (s.timestamp || 0) >= todayStart && s.user === currentUsername;
+            }).reduce((sum, s) => sum + s.total, 0);
+            
+            document.getElementById('work-personal-sales').innerText = mySales.toLocaleString() + " Ks";
+
             let logsTable = document.getElementById('work-logs');
             let displayLogs = (currentUserRole === 'god' || currentUserRole === 'manager') ? shiftLogs : shiftLogs.filter(s => s.name === currentUsername);
 
@@ -1147,7 +1234,7 @@
 
         function switchTable(tableName) {
             activeTable = tableName;
-            if(!openTabs[activeTable]) openTabs[activeTable] = [];
+            if(!openTabs[activeTable]) openTabs[activeTable] = { items: [], startTime: Date.now() };
             document.getElementById('pos-table-select').value = tableName;
             document.getElementById('receipt-table-display').innerText = tableName;
             renderCart(); renderPOSMenu();
@@ -1156,8 +1243,8 @@
         function saveTabs() { localStorage.setItem('tino_tabs', JSON.stringify(openTabs)); syncToCloud(); }
 
         function openTransferModal(fromTable) {
-            let tab = openTabs[fromTable];
-            if (!tab || tab.length === 0) return showToast("This table is empty.", "error");
+            let tabData = openTabs[fromTable];
+            if (!tabData || !tabData.items || tabData.items.length === 0) return showToast("This table is empty.", "error");
             document.getElementById('transfer-from-name').innerText = fromTable;
             document.getElementById('transfer-from-name').setAttribute('data-from', fromTable);
             document.getElementById('transfer-to-select').innerHTML = tables.filter(t => t !== fromTable).map(t => `<option value="${t}">${t}</option>`).join('');
@@ -1170,32 +1257,53 @@
             const targetTable = document.getElementById('transfer-to-select').value;
             if(!targetTable || !fromTable) return;
             
-            if(openTabs[targetTable] && openTabs[targetTable].length > 0) {
+            let fromData = openTabs[fromTable] || { items: [], startTime: Date.now() };
+            let toData = openTabs[targetTable] || { items: [], startTime: Date.now() };
+            
+            if(toData.items.length > 0) {
                 const confirmed = await customConfirm(`${targetTable} has an active order. Merge?`, "Merge Tables", "Yes, Merge", "info");
                 if(!confirmed) return;
-                openTabs[targetTable] = [...openTabs[targetTable], ...openTabs[fromTable]];
+                toData.items = [...toData.items, ...fromData.items];
             } else { 
-                openTabs[targetTable] = [...openTabs[fromTable]]; 
+                toData.items = [...fromData.items]; 
+                toData.startTime = fromData.startTime || Date.now();
             }
-            openTabs[fromTable] = []; closeTransferModal(); saveTabs(); switchTable(targetTable); renderTableManager(); 
+            openTabs[targetTable] = toData;
+            openTabs[fromTable] = { items: [], startTime: Date.now() };
+            closeTransferModal(); saveTabs(); switchTable(targetTable); renderTableManager(); 
             showToast("Order Transferred", "success");
         }
 
         function renderTableManager() { 
             const list = document.getElementById('manager-table-list');
             if(!list) return;
+            const now = Date.now();
+            
             list.innerHTML = tables.map((t, i) => {
-                const isOccupied = openTabs[t] && openTabs[t].length > 0;
+                const tableData = openTabs[t];
+                const isOccupied = tableData && tableData.items && tableData.items.length > 0;
                 
-                const bgClass = isOccupied ? 'bg-red-600 border-red-700 text-white shadow-xl' : 'glass-panel border-transparent hover:border-sky-400';
+                let bgClass = 'glass-panel border-transparent hover:border-sky-400';
+                let timerHtml = '';
+                
+                if(isOccupied) {
+                    const elapsedMins = Math.floor((now - tableData.startTime) / 60000);
+                    if(elapsedMins < 15) {
+                        bgClass = 'bg-emerald-500 border-emerald-600 text-white shadow-lg';
+                    } else if(elapsedMins < 30) {
+                        bgClass = 'bg-amber-500 border-amber-600 text-white shadow-lg';
+                    } else {
+                        bgClass = 'bg-red-600 border-red-700 text-white shadow-lg animate-pulse'; 
+                    }
+                    timerHtml = `<div class="absolute top-2 left-2 bg-black/30 px-2 py-1 rounded-lg text-[10px] font-black font-mono tracking-widest text-white backdrop-blur-md flex items-center gap-1"><span class="animate-spin text-red-400">●</span> ${elapsedMins}M</div>`;
+                }
+                
                 const nameClass = isOccupied ? 'text-white' : 'text-slate-800';
                 const iconClass = isOccupied ? 'text-white' : 'opacity-80 group-hover:opacity-100 group-hover:text-sky-500';
-                const occupiedText = isOccupied ? '<span class="text-xs font-bold uppercase mt-1 text-white/90">Occupied</span>' : '';
-                
-                const transferBtn = isOccupied ? `<button type="button" onclick="event.stopPropagation(); openTransferModal('${t}'); playClick()" class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 text-white font-bold flex items-center justify-center hover:bg-white hover:text-red-600 transition-all opacity-0 group-hover:opacity-100 z-10">🔄</button>` : '';
+                const transferBtn = isOccupied ? `<button type="button" onclick="event.stopPropagation(); openTransferModal('${t}'); playClick()" class="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 text-white font-bold flex items-center justify-center hover:bg-white hover:text-slate-800 transition-all opacity-0 group-hover:opacity-100 z-10">🔄</button>` : '';
                 const delBtn = (currentUserRole === 'god' || currentUserRole === 'manager') ? `<button type="button" onclick="event.stopPropagation(); deleteTable(${i}); playClick()" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-800/20 text-red-200 font-bold flex items-center justify-center hover:bg-red-800 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10">×</button>` : '';
                 
-                return `<div onclick="selectFloorTable('${t}')" class="glass-panel aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer border-2 transition transform hover:-translate-y-2 group relative ${bgClass}"><span class="text-4xl mb-2 ${iconClass}">🪑</span><h3 class="font-black text-xl text-center leading-tight ${nameClass}">${t}</h3>${occupiedText}${transferBtn}${delBtn}</div>`
+                return `<div onclick="selectFloorTable('${t}')" class="glass-panel aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer border-2 transition transform hover:-translate-y-2 group relative ${bgClass}">${timerHtml}<span class="text-4xl mb-2 ${iconClass}">🪑</span><h3 class="font-black text-xl text-center leading-tight ${nameClass}">${t}</h3>${transferBtn}${delBtn}</div>`
             }).join(''); 
             const sel = document.getElementById('pos-table-select');
             if(sel) sel.innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join(''); 
@@ -1271,6 +1379,7 @@
                     </button>`
                 ).join('');
                 headerTitle.innerText = "Categories";
+                if(i18n[currentLang] && i18n[currentLang]['categories']) headerTitle.innerText = i18n[currentLang]['categories'];
             } 
             else if (currentCat && !currentSubcat) {
                 const catItems = menu.filter(item => (item.cat || "Uncategorized") === currentCat);
@@ -1308,24 +1417,28 @@
         }
 
         function addToCart(name, price) {
-            let tab = openTabs[activeTable];
-            let existing = tab.find(i => i.name === name);
-            if (existing) { existing.qty += 1; } else { tab.push({ name, price, qty: 1 }); }
-            saveTabs(); renderCart();
+            let tabData = openTabs[activeTable];
+            if(!tabData || Array.isArray(tabData)) tabData = { items: tabData || [], startTime: Date.now() };
+            
+            let existing = tabData.items.find(i => i.name === name);
+            if (existing) { existing.qty += 1; } else { tabData.items.push({ name, price, qty: 1 }); }
+            openTabs[activeTable] = tabData;
+            saveTabs(); renderCart(); renderTableManager();
         }
 
         function adjustQty(index, amount) {
-            let tab = openTabs[activeTable];
-            tab[index].qty += amount;
-            if (tab[index].qty <= 0) { tab.splice(index, 1); playDelete(); } else { playClick(); }
-            saveTabs(); renderCart();
+            let tabData = openTabs[activeTable];
+            tabData.items[index].qty += amount;
+            if (tabData.items[index].qty <= 0) { tabData.items.splice(index, 1); playDelete(); } else { playClick(); }
+            saveTabs(); renderCart(); renderTableManager();
         }
 
         function renderCart() {
             const list = document.getElementById('cart-list');
             const discRow = document.getElementById('discount-row');
             const mobileCount = document.getElementById('mobile-cart-count');
-            let tab = openTabs[activeTable] || [];
+            let tabData = openTabs[activeTable];
+            let tab = (tabData && tabData.items) ? tabData.items : [];
             
             if(mobileCount) {
                 const totalItems = tab.reduce((sum, item) => sum + item.qty, 0);
@@ -1381,7 +1494,7 @@
 
         function generateESCPOSReceiptText(tab, orderNo, isKOT = false) {
             let txt = "     GOOD COOL & BAKERY\n    Nay Pyi Taw, Pyinmana\n--------------------------------\n";
-            if (isKOT) txt += "      *** KITCHEN ORDER ***\n";
+            if (isKOT) txt += "       *** KITCHEN ORDER ***\n";
             txt += "Date: " + new Date().toLocaleString() + "\nTable: " + activeTable + "\nOrder: " + orderNo + "\n--------------------------------\n";
             tab.forEach(i => {
                 let line = `${i.qty}x ${i.name}`;
@@ -1469,8 +1582,23 @@
             }, 300);
         }
 
+        // 🗑️ CANCEL ORDER LOGIC
+        async function cancelOrder() {
+            let tabData = openTabs[activeTable];
+            if (!tabData || !tabData.items || tabData.items.length === 0) return showToast("Cart is already empty.", "info");
+            
+            if (await customConfirm("Clear the cart and cancel this order?", "Cancel Order", "Yes, Cancel", "danger")) {
+                openTabs[activeTable] = { items: [], startTime: Date.now() };
+                saveTabs();
+                renderCart();
+                renderTableManager();
+                showToast("Order Cancelled", "info");
+            }
+        }
+
         function saveOrder() {
-            let tab = openTabs[activeTable];
+            let tabData = openTabs[activeTable];
+            let tab = (tabData && tabData.items) ? tabData.items : [];
             if (!tab || tab.length === 0) return showToast("Cart is empty! Nothing to save.", "error"); 
             playSuccess();
             
@@ -1484,7 +1612,7 @@
                 dailyTracker.count++;
                 const orderNo = "#" + String(dailyTracker.count).padStart(3, '0');
                 localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
-                queueList.push({ id: Date.now(), orderNo: orderNo, table: activeTable, items: itemsList, status: 'preparing', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+                queueList.push({ id: Date.now(), timestamp: Date.now(), orderNo: orderNo, table: activeTable, items: itemsList, status: 'preparing', time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
             }
             
             localStorage.setItem('tino_queue', JSON.stringify(queueList));
@@ -1504,7 +1632,8 @@
         }
 
         function processOrder() {
-            let tab = openTabs[activeTable];
+            let tabData = openTabs[activeTable];
+            let tab = (tabData && tabData.items) ? tabData.items : [];
             if (!tab || tab.length === 0) return showToast("Cannot complete an empty order!", "error"); 
             playSuccess();
             
@@ -1526,7 +1655,19 @@
 
             const orderTotal = parseInt(document.getElementById('grand-total').innerText.replace(/,/g, ''));
 
-            sales.push({ time: new Date().toLocaleTimeString(), dateObj: new Date().toLocaleString(), table: activeTable, orderNo: orderNo, items: itemsList, total: orderTotal, rawItems: [...tab], appliedTax: appConfig.tax, appliedDiscount: appConfig.discount });
+            sales.push({ 
+                timestamp: Date.now(), 
+                time: new Date().toLocaleTimeString(), 
+                dateObj: new Date().toLocaleString(), 
+                table: activeTable, 
+                orderNo: orderNo, 
+                items: itemsList, 
+                total: orderTotal, 
+                rawItems: [...tab], 
+                appliedTax: appConfig.tax, 
+                appliedDiscount: appConfig.discount, 
+                user: currentUsername 
+            });
             localStorage.setItem('tino_sales', JSON.stringify(sales));
             
             notifyOS('Payment Received', `${orderTotal.toLocaleString()} Ks from ${activeTable}`);
@@ -1540,8 +1681,8 @@
             setTimeout(() => {
                 executePrint('receipt-area', () => {
                     overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
-                    rn.classList.add('hidden'); openTabs[activeTable] = []; saveTabs(); document.getElementById('pos-search').value = ""; 
-                    renderCart(); renderPOSMenu(); renderTableManager(); renderDashboard(); renderQueue();
+                    rn.classList.add('hidden'); openTabs[activeTable] = { items: [], startTime: Date.now() }; saveTabs(); document.getElementById('pos-search').value = ""; 
+                    renderCart(); renderPOSMenu(); renderTableManager(); renderDashboard(); renderQueue(); renderWorkspace();
                     const cartArea = document.getElementById('receipt-area');
                     if(cartArea.classList.contains('mobile-open')) toggleMobileCart();
                 }, escposText);
@@ -1549,7 +1690,8 @@
         }
 
         function printKOT() {
-            let tab = openTabs[activeTable];
+            let tabData = openTabs[activeTable];
+            let tab = (tabData && tabData.items) ? tabData.items : [];
             if (!tab || tab.length === 0) return showToast("Cart is empty!", "error");
             playSuccess();
             
@@ -1659,27 +1801,26 @@
         async function clearQueue() { if(await customConfirm("Clear the entire visual queue?", "Reset Queue", "Clear All", "danger")) { queueList = []; renderQueue(); showToast("Queue Cleared", "info"); } }
 
         function renderDashboard() {
-            const now = new Date(); 
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-            const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+            const nowMs = Date.now();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStart = today.getTime();
+            const weekStart = todayStart - (7 * 24 * 60 * 60 * 1000);
+            const monthStart = todayStart - (30 * 24 * 60 * 60 * 1000);
 
             let revToday = 0, revWeek = 0, revMonth = 0;
             let expToday = 0;
             
             sales.forEach(order => {
-                let orderDateStr = order.dateObj.split(',')[0];
-                let orderDate = new Date(orderDateStr);
-                let orderDay = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
-
-                if (orderDay.getTime() === today.getTime()) revToday += order.total;
-                if (orderDay >= lastWeek) revWeek += order.total;
-                if (orderDay >= lastMonth) revMonth += order.total;
+                let orderTime = order.timestamp || 0; 
+                if (orderTime >= todayStart) revToday += order.total;
+                if (orderTime >= weekStart) revWeek += order.total;
+                if (orderTime >= monthStart) revMonth += order.total;
             });
             
             expenses.forEach(exp => {
-                let expDate = new Date(new Date(exp.dateObj.split(',')[0]).getFullYear(), new Date(exp.dateObj.split(',')[0]).getMonth(), new Date(exp.dateObj.split(',')[0]).getDate());
-                if(expDate.getTime() === today.getTime()) expToday += exp.amount;
+                let expTime = exp.timestamp || 0;
+                if (expTime >= todayStart) expToday += exp.amount;
             });
 
             document.getElementById('dash-rev-today').innerText = revToday.toLocaleString();
@@ -1692,10 +1833,10 @@
             const historyBody = document.getElementById('dash-history');
             
             let combinedHistory = [];
-            sales.forEach(s => combinedHistory.push({ type: 'Sale', time: s.time, dateObj: s.dateObj, orderNo: s.orderNo, table: s.table, items: s.items, total: s.total }));
-            expenses.forEach(e => combinedHistory.push({ type: 'Expense', time: e.time, dateObj: e.dateObj, category: e.category, note: e.note, total: e.amount, user: e.user }));
+            sales.forEach(s => combinedHistory.push({ type: 'Sale', time: s.time, dateObj: s.dateObj, timestamp: s.timestamp || 0, orderNo: s.orderNo, table: s.table, items: s.items, total: s.total }));
+            expenses.forEach(e => combinedHistory.push({ type: 'Expense', time: e.time, dateObj: e.dateObj, timestamp: e.timestamp || 0, category: e.category, note: e.note, total: e.amount, user: e.user }));
             
-            combinedHistory.sort((a, b) => new Date(a.dateObj).getTime() - new Date(b.dateObj).getTime());
+            combinedHistory.sort((a, b) => a.timestamp - b.timestamp);
             
             if(combinedHistory.length === 0) { historyBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 italic font-bold">No transactions recorded yet.</td></tr>`; return; }
             
@@ -1734,10 +1875,17 @@
             for(let i=6; i>=0; i--) {
                 let d = new Date();
                 d.setDate(d.getDate() - i);
+                d.setHours(0, 0, 0, 0);
+                let checkDayStart = d.getTime();
+                let checkDayEnd = checkDayStart + (24 * 60 * 60 * 1000);
+                
                 labels.push(d.toLocaleDateString(undefined, {month:'short', day:'numeric'}));
                 
-                let dayTotal = sales.filter(s => new Date(s.dateObj.split(',')[0]).toDateString() === d.toDateString())
-                                    .reduce((sum, order) => sum + order.total, 0);
+                let dayTotal = sales.filter(s => {
+                    let t = s.timestamp || 0;
+                    return t >= checkDayStart && t < checkDayEnd;
+                }).reduce((sum, order) => sum + order.total, 0);
+                
                 data.push(dayTotal);
             }
 
@@ -1765,6 +1913,22 @@
                     } 
                 }
             });
+        }
+
+        // 🧹 CLEAR DASHBOARD LOGIC
+        async function clearDashboard() {
+            if (currentUserRole !== 'god' && currentUserRole !== 'manager') {
+                return showToast("Access Denied. Manager or Owner required.", "error");
+            }
+            if (await customConfirm("Clear all sales and expense history? This cannot be undone.", "Clear Dashboard", "Yes, Clear Data", "danger")) {
+                sales = [];
+                expenses = [];
+                localStorage.setItem('tino_sales', JSON.stringify(sales));
+                localStorage.setItem('tino_expenses', JSON.stringify(expenses));
+                syncToCloud();
+                renderDashboard();
+                showToast("Dashboard Data Cleared", "success");
+            }
         }
         
         async function clearSalesHistory() { 
@@ -1828,6 +1992,7 @@
             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `GoodCool_Backup_${Date.now()}.json`; link.click();
             showToast("Database Backup Created", "success");
         }
+
         function restoreDB(e) {
             const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
@@ -1879,6 +2044,31 @@
             }
             requestAnimationFrame(updateGame);
         }
+    </script>
+    
+    <script>
+        // 1. Disable Right-Click (Context Menu)
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // 2. Block Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+U, etc.)
+        document.onkeydown = function(e) {
+            // F12 key
+            if (e.keyCode === 123) {
+                return false;
+            }
+            // Ctrl+Shift+I (Open DevTools)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+                return false;
+            }
+            // Ctrl+Shift+J (Open Console)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+                return false;
+            }
+            // Ctrl+U (View Source)
+            if (e.ctrlKey && e.keyCode === 85) {
+                return false;
+            }
+        };
     </script>
 </body>
 </html>
