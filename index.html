@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Good Cool & Bakery POS | Master Build</title>
+    <title>Good Cool & Bakery POS | Master Build v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -125,6 +125,21 @@
         </div>
     </div>
 
+    <div id="override-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[999999] p-4">
+        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center animate-pop-in">
+            <div class="text-4xl mb-4">🔒</div>
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Manager Override</h3>
+            <p class="text-slate-500 font-bold mb-6 text-sm">Enter Manager PIN to authorize</p>
+            
+            <input type="password" id="override-pin" placeholder="****" class="w-full p-4 text-center text-2xl tracking-widest bg-slate-100 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 font-black text-slate-800 mb-6">
+            
+            <div class="flex gap-3">
+                <button type="button" onclick="cancelOverride()" class="flex-1 bg-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
+                <button type="button" onclick="verifyOverride()" class="flex-1 bg-red-500 text-white font-bold py-4 rounded-xl hover:bg-red-600 shadow-lg shadow-red-500/30 transition active:scale-95">Authorize</button>
+            </div>
+        </div>
+    </div>
+
     <div id="expense-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-[99999] p-4 transition-opacity">
         <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-md shadow-2xl transform transition-all animate-pop-in">
             <h3 class="text-2xl font-black text-slate-800 mb-2" data-i18n="log_exp">Log Petty Cash</h3>
@@ -198,7 +213,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-slate-600 ml-1">Category</label>
-                        <input type="text" id="menu-cat" placeholder="e.g. Drinks" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-bold text-slate-800">
+                        <input type="text" id="menu-cat" oninput="autoGenerateCode()" placeholder="e.g. Drinks" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-bold text-slate-800">
                     </div>
                     <div>
                         <label class="text-sm font-bold text-slate-600 ml-1">Sub-Category</label>
@@ -395,7 +410,7 @@
                 <div class="grid grid-cols-2 gap-2 mt-4 w-full pb-8 lg:pb-0">
                     <button type="button" onclick="printKOT()" class="no-print bg-amber-500 text-white py-3 rounded-xl font-black text-sm hover:bg-amber-400 shadow-lg transition-all active:scale-95" data-i18n="btn_kot">🍳 KOT</button>
                     <button type="button" onclick="saveOrder()" class="no-print bg-emerald-500 text-white py-3 rounded-xl font-black text-sm hover:bg-emerald-400 shadow-lg transition-all active:scale-95" data-i18n="btn_save">💾 SAVE</button>
-                    <button type="button" onclick="cancelOrder()" class="no-print bg-red-500 text-white py-3 rounded-xl font-black text-sm hover:bg-red-400 shadow-lg transition-all active:scale-95" data-i18n="btn_cancel">🗑️ CANCEL</button>
+                    <button type="button" onclick="requireOverride(cancelOrder)" class="no-print bg-red-500 text-white py-3 rounded-xl font-black text-sm hover:bg-red-400 shadow-lg transition-all active:scale-95" data-i18n="btn_cancel">🗑️ CANCEL</button>
                     <button type="button" onclick="processOrder()" class="no-print bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-3 rounded-xl font-black text-lg hover:opacity-90 shadow-lg transition-all active:scale-95" data-i18n="btn_pay">🖨️ PAY</button>
                 </div>
             </div>
@@ -458,6 +473,20 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="glass-panel p-6 rounded-3xl col-span-1 md:col-span-4 mt-2 border-t-8 border-t-amber-400">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-xl text-slate-800">📝 Digital Shift Notes</h4>
+                    </div>
+                    
+                    <div class="flex gap-4 mb-6">
+                        <input type="text" id="new-note-input" placeholder="Type a message for the team..." class="flex-1 p-4 bg-white/60 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-400 font-medium text-slate-800">
+                        <button type="button" onclick="postShiftNote(); playClick()" class="bg-amber-500 text-white px-8 rounded-xl font-bold shadow hover:bg-amber-400 transition active:scale-95">Post</button>
+                    </div>
+                    
+                    <div id="shift-notes-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </div>
+
             </div>
         </section>
 
@@ -676,10 +705,118 @@
         let dailyTracker = JSON.parse(localStorage.getItem('tino_tracker')) || { date: new Date().toLocaleDateString(), count: 0 };
         let shiftLogs = JSON.parse(localStorage.getItem('tino_shifts')) || [];
         
+        // NEW VARS
+        let shiftNotes = JSON.parse(localStorage.getItem('tino_notes')) || [];
+        let pendingAction = null; 
+        const MANAGER_PIN = "1234";
+        
         let activeTable = tables[0];
         let currentCat = null; let currentSubcat = null;
         let isSyncingFromCloud = false;
         let salesChartInstance = null;
+
+        // NEW: Manager Override Functions
+        function requireOverride(actionFunction) {
+            if (currentUserRole === 'staff') {
+                pendingAction = actionFunction;
+                document.getElementById('override-modal').classList.remove('hidden');
+                document.getElementById('override-pin').value = '';
+                document.getElementById('override-pin').focus();
+                playClick();
+            } else {
+                actionFunction(); 
+            }
+        }
+
+        function verifyOverride() {
+            const pin = document.getElementById('override-pin').value;
+            if (pin === MANAGER_PIN) {
+                document.getElementById('override-modal').classList.add('hidden');
+                playSuccess();
+                if (pendingAction) pendingAction();
+                pendingAction = null;
+            } else {
+                showToast("Incorrect Manager PIN!", "error");
+                document.getElementById('override-pin').value = '';
+            }
+        }
+
+        function cancelOverride() {
+            document.getElementById('override-modal').classList.add('hidden');
+            pendingAction = null;
+            playClick();
+        }
+
+        // NEW: Auto-Generate Menu Code
+        function autoGenerateCode() {
+            const catInput = document.getElementById('menu-cat').value.trim().toUpperCase();
+            const codeInput = document.getElementById('menu-code');
+            
+            if (catInput.length >= 3 && codeInput.value === "") {
+                const prefix = catInput.substring(0, 4); 
+                let maxNum = 0;
+                menu.forEach(item => {
+                    if (item.code && item.code.startsWith(prefix)) {
+                        let numStr = item.code.replace(prefix, '');
+                        let num = parseInt(numStr);
+                        if (!isNaN(num) && num > maxNum) {
+                            maxNum = num;
+                        }
+                    }
+                });
+                codeInput.value = prefix + String(maxNum + 1).padStart(3, '0');
+            }
+        }
+
+        // NEW: Shift Notes Functions
+        function postShiftNote() {
+            const input = document.getElementById('new-note-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            shiftNotes.unshift({
+                text: text,
+                author: currentUsername,
+                time: new Date().toLocaleString([], {hour: '2-digit', minute:'2-digit', month:'short', day:'numeric'})
+            });
+            
+            if (shiftNotes.length > 15) shiftNotes.pop();
+            
+            localStorage.setItem('tino_notes', JSON.stringify(shiftNotes));
+            input.value = '';
+            renderShiftNotes();
+            syncToCloud();
+            showToast("Note posted!", "success");
+        }
+
+        function renderShiftNotes() {
+            const container = document.getElementById('shift-notes-container');
+            if (!container) return;
+            
+            if (shiftNotes.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 italic font-bold text-sm">No notes posted yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = shiftNotes.map((note, index) => `
+                <div class="bg-yellow-50 p-4 rounded-xl shadow-sm border border-yellow-200 relative group animate-pop-in">
+                    <p class="text-slate-800 font-medium mb-3">${note.text}</p>
+                    <div class="flex justify-between items-center border-t border-yellow-200/50 pt-2">
+                        <span class="text-xs font-bold text-slate-500">${note.author}</span>
+                        <span class="text-[10px] text-slate-400">${note.time}</span>
+                    </div>
+                    ${(currentUserRole === 'god' || currentUserRole === 'manager') ? `<button onclick="deleteNote(${index})" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition shadow">×</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function deleteNote(index) {
+            shiftNotes.splice(index, 1);
+            localStorage.setItem('tino_notes', JSON.stringify(shiftNotes));
+            renderShiftNotes();
+            syncToCloud();
+            playDelete();
+        }
 
         // 🌐 i18n Translation Dictionary
         const i18n = {
@@ -746,7 +883,6 @@
 
         window.addEventListener('firebase-ready', () => { console.log("🔥 Firebase initialized."); });
 
-        // 🚨 Unsaved Changes Warning hook
         window.addEventListener('beforeunload', (e) => {
             const hasUnsaved = Object.values(openTabs).some(t => t.items && t.items.length > 0);
             if (hasUnsaved) {
@@ -1065,15 +1201,17 @@
             }
         });
 
+        // UPDATED: Sync Shift Notes
         async function syncToCloud() {
             if (!window.db || isSyncingFromCloud) return;
-            const dataToSync = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses };
+            const dataToSync = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses, notes: shiftNotes };
             try {
                 await window.fbSetDoc(window.fbDoc(window.db, "goodcool_pos", "master_state"), dataToSync);
                 document.getElementById('cloud-status').classList.remove('hidden');
             } catch(error) { console.error("Cloud Sync Error:", error); }
         }
 
+        // UPDATED: Listen for Shift Notes
         function initFirebaseListener() {
             if (!window.db) return;
             window.fbOnSnapshot(window.fbDoc(window.db, "goodcool_pos", "master_state"), (doc) => {
@@ -1095,6 +1233,7 @@
                     if(cloudData.tracker) dailyTracker = cloudData.tracker;
                     if(cloudData.shifts) shiftLogs = cloudData.shifts;
                     if(cloudData.expenses) expenses = cloudData.expenses;
+                    if(cloudData.notes) shiftNotes = cloudData.notes;
 
                     localStorage.setItem('tino_config', JSON.stringify(appConfig));
                     localStorage.setItem('tino_menu', JSON.stringify(menu));
@@ -1105,8 +1244,9 @@
                     localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
                     localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs));
                     localStorage.setItem('tino_expenses', JSON.stringify(expenses));
+                    localStorage.setItem('tino_notes', JSON.stringify(shiftNotes));
 
-                    applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderCart(); renderQueue(); renderWorkspace();
+                    applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderCart(); renderQueue(); renderWorkspace(); renderShiftNotes();
                     
                     document.getElementById('cloud-status').classList.remove('hidden');
                     isSyncingFromCloud = false;
@@ -1172,7 +1312,7 @@
 
         function initApp() {
             if(!openTabs[activeTable]) openTabs[activeTable] = { items: [], startTime: Date.now() };
-            applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace();
+            applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace(); renderShiftNotes();
             document.getElementById('pos-table-select').innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join('');
             switchTable(tables[0]);
             initFirebaseListener();
@@ -1504,7 +1644,7 @@
             }
             
             if (tab.length === 0) {
-                list.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 italic">Cart is empty</div>';
+                list.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 italic font-bold text-sm">Cart is empty</div>';
                 document.getElementById('subtotal').innerText = "0"; document.getElementById('tax-amt').innerText = "0"; document.getElementById('grand-total').innerText = "0";
                 discRow.style.display = 'none'; return;
             }
@@ -1551,7 +1691,7 @@
 
         function generateESCPOSReceiptText(tab, orderNo, isKOT = false) {
             let txt = "     GOOD COOL & BAKERY\n    Nay Pyi Taw, Pyinmana\n--------------------------------\n";
-            if (isKOT) txt += "       *** KITCHEN ORDER ***\n";
+            if (isKOT) txt += "        *** KITCHEN ORDER ***\n";
             txt += "Date: " + new Date().toLocaleString() + "\nTable: " + activeTable + "\nOrder: " + orderNo + "\n--------------------------------\n";
             tab.forEach(i => {
                 let line = `${i.qty}x ${i.name}`;
@@ -1566,7 +1706,7 @@
                 const sub = tab.reduce((sum, item) => sum + (item.price * item.qty), 0);
                 const tax = Math.round(sub * (appConfig.tax / 100));
                 txt += "--------------------------------\n";
-                txt += `SUBTOTAL:           ${sub} Ks\nTAX (${appConfig.tax}%):             ${tax} Ks\nTOTAL:              ${sub+tax} Ks\n`;
+                txt += `SUBTOTAL:            ${sub} Ks\nTAX (${appConfig.tax}%):             ${tax} Ks\nTOTAL:               ${sub+tax} Ks\n`;
             }
             return txt;
         }
@@ -1639,7 +1779,6 @@
             }, 300);
         }
 
-        // 🗑️ CANCEL ORDER LOGIC
         async function cancelOrder() {
             let tabData = openTabs[activeTable];
             if (!tabData || !tabData.items || tabData.items.length === 0) return showToast("Cart is already empty.", "info");
@@ -1972,7 +2111,6 @@
             });
         }
 
-        // 🧹 CLEAR DASHBOARD LOGIC
         async function clearDashboard() {
             if (currentUserRole !== 'god' && currentUserRole !== 'manager') {
                 return showToast("Access Denied. Manager or Owner required.", "error");
@@ -2044,7 +2182,7 @@
         }
 
         function backupDB() {
-            const db = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses };
+            const db = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses, notes: shiftNotes };
             const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `GoodCool_Backup_${Date.now()}.json`; link.click();
             showToast("Database Backup Created", "success");
@@ -2056,7 +2194,7 @@
             reader.onload = function(e) {
                 try {
                     const db = JSON.parse(e.target.result);
-                    if(db.config) appConfig = db.config; if(db.menu) menu = db.menu; if(db.tables) tables = db.tables; if(db.sales) sales = db.sales; if(db.tabs) openTabs = db.tabs; if(db.queue) queueList = db.queue; if(db.tracker) dailyTracker = db.tracker; if(db.shifts) shiftLogs = db.shifts; if(db.expenses) expenses = db.expenses;
+                    if(db.config) appConfig = db.config; if(db.menu) menu = db.menu; if(db.tables) tables = db.tables; if(db.sales) sales = db.sales; if(db.tabs) openTabs = db.tabs; if(db.queue) queueList = db.queue; if(db.tracker) dailyTracker = db.tracker; if(db.shifts) shiftLogs = db.shifts; if(db.expenses) expenses = db.expenses; if(db.notes) shiftNotes = db.notes;
                     syncToCloud(); showToast("Database Restored Successfully! Reloading...", "success"); setTimeout(() => location.reload(), 1500);
                 } catch(err) { showToast("Invalid Backup File!", "error"); }
             }; reader.readAsText(file);
@@ -2109,22 +2247,10 @@
 
         // 2. Block Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+U, etc.)
         document.onkeydown = function(e) {
-            // F12 key
-            if (e.keyCode === 123) {
-                return false;
-            }
-            // Ctrl+Shift+I (Open DevTools)
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
-                return false;
-            }
-            // Ctrl+Shift+J (Open Console)
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
-                return false;
-            }
-            // Ctrl+U (View Source)
-            if (e.ctrlKey && e.keyCode === 85) {
-                return false;
-            }
+            if (e.keyCode === 123) return false;
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) return false;
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) return false;
+            if (e.ctrlKey && e.keyCode === 85) return false;
         };
     </script>
 </body>
