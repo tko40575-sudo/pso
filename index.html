@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Good Cool & Bakery POS | Master Build v2</title>
+    <title>Good Cool & Bakery POS | Master Build</title>
+    
+    <link id="dynamic-favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍔</text></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -78,6 +81,24 @@
         .sidebar-link:hover { background: rgba(255, 255, 255, 0.5); color: #0284c7; transform: translateX(5px); }
         .active-link { background: #0ea5e9 !important; color: #fff !important; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); transform: translateX(5px); }
         
+        /* 🚀 RUSH MODE STYLES (Hyper-Speed UI) */
+        body.rush-mode { background: #f1f5f9 !important; }
+        body.rush-mode #dynamic-bg-video { display: none !important; }
+        body.rush-mode * { animation: none !important; transition: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        body.rush-mode .glass-panel { background: white !important; border: 1px solid #e2e8f0 !important; box-shadow: none !important; border-radius: 12px !important; }
+        body.rush-mode .glass-button { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; }
+        body.rush-mode .glass-button:hover { background: #e2e8f0 !important; transform: none !important; }
+        body.rush-mode #pos-menu-grid button { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; padding: 10px; height: auto; }
+        body.rush-mode #pos-menu-grid button div.absolute { display: none !important; } /* Hide Gradients */
+        body.rush-mode #pos-menu-grid button p { text-shadow: none !important; color: #1e293b !important; }
+
+        /* 🤖 ELITE BOT! STYLES */
+        #elite-bot-panel { transform: translateY(120%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100000; }
+        #elite-bot-panel.open { transform: translateY(0); }
+        .bot-glow { box-shadow: 0 0 20px rgba(14, 165, 233, 0.5); border: 2px solid #0ea5e9; }
+        #bot-console-input { font-family: 'Courier New', monospace; caret-color: #0ea5e9; }
+        #bot-console-input::placeholder { color: #94a3b8; opacity: 0.7; }
+
         @media (max-width: 1024px) {
             #receipt-area { display: none; } 
             #receipt-area.mobile-open { display: flex !important; position: fixed; inset: 0; z-index: 999; height: 100vh; border-radius: 0; }
@@ -108,6 +129,23 @@
 
     <div id="toast-container" class="fixed top-6 right-6 z-[999999] flex flex-col gap-4 pointer-events-none"></div>
 
+    <button onclick="toggleEliteBot()" class="fixed bottom-6 right-6 w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center text-3xl shadow-2xl z-[99999] hover:scale-110 transition active:scale-95 bot-glow">🤖</button>
+    
+    <div id="elite-bot-panel" class="fixed bottom-24 right-6 w-full max-w-md glass-panel bg-slate-900/95 rounded-3xl p-6 shadow-2xl border-2 border-sky-500 hidden">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+            <h3 class="text-xl font-black text-white tracking-widest">Elite Bot! <span class="text-sky-400 text-xs uppercase">Terminal</span></h3>
+            <button onclick="toggleEliteBot()" class="text-slate-400 hover:text-white text-2xl font-bold">×</button>
+        </div>
+        <div id="bot-response-area" class="h-48 overflow-y-auto mb-4 text-emerald-400 font-mono text-sm space-y-2 p-4 bg-black/60 rounded-xl shadow-inner">
+            <p>> System initialized. Awaiting command...</p>
+            <p class="text-slate-400 italic">Try: 'sales today', 'clear cart', 'go pos', 'rush on'</p>
+        </div>
+        <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sky-400 font-mono font-bold">></span>
+            <input type="text" id="bot-console-input" placeholder="Type command..." class="w-full bg-slate-800 text-sky-300 p-4 pl-10 rounded-xl outline-none border border-slate-700 focus:border-sky-500 font-mono text-lg shadow-inner">
+        </div>
+    </div>
+
     <div id="confirm-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-[999999] p-4 opacity-0 transition-opacity duration-300">
         <div id="confirm-box" class="bg-white/90 backdrop-blur-xl p-8 rounded-3xl w-full max-w-sm shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] border border-white/50 transform scale-95 transition-transform duration-300 flex flex-col items-center text-center">
             
@@ -126,12 +164,12 @@
     </div>
 
     <div id="override-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[999999] p-4">
-        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center animate-pop-in">
-            <div class="text-4xl mb-4">🔒</div>
+        <div class="glass-panel bg-white/90 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center animate-pop-in border border-white">
+            <div class="text-5xl mb-4 drop-shadow-sm">🔒</div>
             <h3 class="text-2xl font-black text-slate-800 mb-2">Manager Override</h3>
-            <p class="text-slate-500 font-bold mb-6 text-sm">Enter Manager PIN to authorize</p>
+            <p class="text-slate-500 font-bold mb-6 text-sm">Enter Manager PIN to authorize action.</p>
             
-            <input type="password" id="override-pin" placeholder="****" class="w-full p-4 text-center text-2xl tracking-widest bg-slate-100 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 font-black text-slate-800 mb-6">
+            <input type="password" id="override-pin" placeholder="****" class="w-full p-4 text-center text-3xl tracking-[0.5em] bg-slate-100 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 font-black text-slate-800 mb-6 shadow-inner">
             
             <div class="flex gap-3">
                 <button type="button" onclick="cancelOverride()" class="flex-1 bg-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-300 transition active:scale-95">Cancel</button>
@@ -207,7 +245,7 @@
                     </div>
                     <div>
                         <label class="text-sm font-bold text-slate-600 ml-1">Code</label>
-                        <input type="text" id="menu-code" placeholder="e.g. DR01" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-bold text-slate-800">
+                        <input type="text" id="menu-code" placeholder="e.g. FOOD001" class="w-full p-4 mt-1 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 font-bold text-slate-800">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -410,7 +448,9 @@
                 <div class="grid grid-cols-2 gap-2 mt-4 w-full pb-8 lg:pb-0">
                     <button type="button" onclick="printKOT()" class="no-print bg-amber-500 text-white py-3 rounded-xl font-black text-sm hover:bg-amber-400 shadow-lg transition-all active:scale-95" data-i18n="btn_kot">🍳 KOT</button>
                     <button type="button" onclick="saveOrder()" class="no-print bg-emerald-500 text-white py-3 rounded-xl font-black text-sm hover:bg-emerald-400 shadow-lg transition-all active:scale-95" data-i18n="btn_save">💾 SAVE</button>
+                    
                     <button type="button" onclick="requireOverride(cancelOrder)" class="no-print bg-red-500 text-white py-3 rounded-xl font-black text-sm hover:bg-red-400 shadow-lg transition-all active:scale-95" data-i18n="btn_cancel">🗑️ CANCEL</button>
+                    
                     <button type="button" onclick="processOrder()" class="no-print bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-3 rounded-xl font-black text-lg hover:opacity-90 shadow-lg transition-all active:scale-95" data-i18n="btn_pay">🖨️ PAY</button>
                 </div>
             </div>
@@ -478,12 +518,10 @@
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-bold text-xl text-slate-800">📝 Digital Shift Notes</h4>
                     </div>
-                    
                     <div class="flex gap-4 mb-6">
                         <input type="text" id="new-note-input" placeholder="Type a message for the team..." class="flex-1 p-4 bg-white/60 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-400 font-medium text-slate-800">
                         <button type="button" onclick="postShiftNote(); playClick()" class="bg-amber-500 text-white px-8 rounded-xl font-bold shadow hover:bg-amber-400 transition active:scale-95">Post</button>
                     </div>
-                    
                     <div id="shift-notes-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
                 </div>
 
@@ -583,19 +621,38 @@
                 <h2 class="text-3xl font-black text-slate-800 mb-8 text-center drop-shadow-sm">Settings</h2>
                 
                 <div class="space-y-4">
-                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
-                        <h4 class="font-bold text-slate-800 text-base">Tax Rate (%)</h4>
-                        <input type="number" id="config-tax" class="w-24 py-2 px-4 bg-white rounded-xl outline-none text-center font-bold text-slate-800 shadow-inner">
+                    <div class="flex justify-between items-center bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <h4 class="font-black text-slate-800 text-lg">🚀 Rush Mode (Hyper-Speed)</h4>
+                            <p class="text-xs text-slate-500 mt-1">Strips UI animations and images for maximum checkout speed.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" id="config-rush" onchange="toggleRushMode(this.checked)" class="sr-only peer">
+                          <div class="w-14 h-8 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-sky-500"></div>
+                        </label>
                     </div>
 
-                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Custom Favicon</h4>
+                            <p class="text-xs text-slate-500 mt-1">Enter an emoji (🍔, ☕, 🍰) or a direct image URL.</p>
+                        </div>
+                        <input type="text" id="config-favicon" placeholder="🍔" class="w-32 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-center font-bold text-slate-800 shadow-inner">
+                    </div>
+
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-slate-800 text-base">Tax Rate (%)</h4>
+                        <input type="number" id="config-tax" class="w-24 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-center font-bold text-slate-800 shadow-inner">
+                    </div>
+
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
                         <h4 class="font-bold text-slate-800 text-base">Global Discount (%)</h4>
-                        <input type="number" id="config-discount" class="w-24 py-2 px-4 bg-white rounded-xl outline-none text-center font-bold text-red-500 shadow-inner">
+                        <input type="number" id="config-discount" class="w-24 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-center font-bold text-red-500 shadow-inner">
                     </div>
                     
-                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
                         <h4 class="font-bold text-slate-800 text-base">Promotion Text</h4>
-                        <input type="text" id="config-promo" class="w-48 py-2 px-4 bg-white rounded-xl outline-none text-center font-bold text-sky-700 shadow-inner">
+                        <input type="text" id="config-promo" class="w-48 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-center font-bold text-sky-700 shadow-inner">
                     </div>
 
                     <div class="flex justify-between items-center bg-emerald-50 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-emerald-200">
@@ -609,28 +666,28 @@
                         </label>
                     </div>
 
-                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
                         <div>
                             <h4 class="font-bold text-slate-800 text-base">Custom Background Video/Image URL</h4>
                             <p class="text-xs text-slate-500 mt-1">Supports .mp4 links or static images</p>
                         </div>
-                        <input type="text" id="config-bg" placeholder="https://..." class="w-56 py-2 px-4 bg-white rounded-xl outline-none text-xs text-slate-700 shadow-inner">
+                        <input type="text" id="config-bg" placeholder="https://..." class="w-56 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-xs text-slate-700 shadow-inner">
                     </div>
                     
-                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
                         <div>
                             <h4 class="font-bold text-slate-800 text-base">Custom Mouse Cursor URL</h4>
                             <p class="text-xs text-slate-500 mt-1">Must be a .png or .cur link</p>
                         </div>
-                        <input type="text" id="config-cursor" placeholder="https://..." class="w-56 py-2 px-4 bg-white rounded-xl outline-none text-xs text-slate-700 shadow-inner">
+                        <input type="text" id="config-cursor" placeholder="https://..." class="w-56 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-xs text-slate-700 shadow-inner">
                     </div>
                     
-                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center bg-white/70 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-200">
                         <div>
                             <h4 class="font-bold text-slate-800 text-base">Custom System Font</h4>
                             <p class="text-xs text-slate-500 mt-1">Enter a Google Font name (e.g., 'Poppins', 'Space Mono')</p>
                         </div>
-                        <input type="text" id="config-font" placeholder="e.g. Quicksand" class="w-56 py-2 px-4 bg-white rounded-xl outline-none text-sm font-bold text-slate-800 shadow-inner">
+                        <input type="text" id="config-font" placeholder="e.g. Quicksand" class="w-56 py-2 px-4 bg-white border border-slate-200 rounded-xl outline-none text-sm font-bold text-slate-800 shadow-inner">
                     </div>
 
                     <button type="button" onclick="saveSettings(); playSuccess()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-black text-xl hover:bg-slate-700 transition active:scale-95 shadow-md mt-4">SAVE SETTINGS</button>
@@ -685,29 +742,30 @@
     </main>
 
     <script>
+        // --- CORE GLOBAL VARIABLES ---
         let currentUserRole = 'guest';
         let currentUsername = 'Guest';
         
-        let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false };
+        // Expanded config object to include new features
+        let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false, rushMode: false, customFavicon: '🍔' };
         
         let menu = JSON.parse(localStorage.getItem('tino_menu')) || [ 
-            { name: "Ice Coffee", price: 2500, cat: "Drinks", code: "DC01", img: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400" },
-            { name: "Croissant", price: 1500, cat: "Bakery", code: "BK01", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400" },
-            { name: "Chocolate Cake", price: 15000, cat: "Cakes", code: "CK01", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400" }
+            { name: "Ice Coffee", price: 2500, cat: "Drinks", code: "DRIN001", img: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400" },
+            { name: "Croissant", price: 1500, cat: "Bakery", code: "BAKE001", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400" },
+            { name: "Chocolate Cake", price: 15000, cat: "Cakes", code: "CAKE001", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400" }
         ];
         
         let tables = JSON.parse(localStorage.getItem('tino_tables')) || ['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Takeaway'];
         let sales = JSON.parse(localStorage.getItem('tino_sales')) || [];
         let openTabs = JSON.parse(localStorage.getItem('tino_tabs')) || {}; 
         let expenses = JSON.parse(localStorage.getItem('tino_expenses')) || []; 
-        
         let queueList = JSON.parse(localStorage.getItem('tino_queue')) || [];
         let dailyTracker = JSON.parse(localStorage.getItem('tino_tracker')) || { date: new Date().toLocaleDateString(), count: 0 };
         let shiftLogs = JSON.parse(localStorage.getItem('tino_shifts')) || [];
         
-        // NEW VARS
+        // NEW FEATURE DATA: Shift Notes & Override
         let shiftNotes = JSON.parse(localStorage.getItem('tino_notes')) || [];
-        let pendingAction = null; 
+        let pendingAction = null;
         const MANAGER_PIN = "1234";
         
         let activeTable = tables[0];
@@ -715,7 +773,110 @@
         let isSyncingFromCloud = false;
         let salesChartInstance = null;
 
-        // NEW: Manager Override Functions
+        // 🌐 i18n Translation Dictionary
+        const i18n = {
+            en: {
+                nav_tables: "Floor Plan", nav_pos: "Terminal", nav_queue: "Live Queue", nav_work: "Workspace", nav_dash: "Dashboard", nav_menu: "Menu", nav_settings: "Settings",
+                logout: "Log Out", select_table: "Select Table to Order", add: "Add", categories: "Categories", search: "Search by name or code...",
+                item: "ITEM", qty: "QTY", price: "PRICE", subtotal: "Subtotal:", discount: "Discount", tax: "Tax", total: "TOTAL:",
+                btn_kot: "🍳 KOT", btn_save: "💾 SAVE", btn_cancel: "🗑️ CANCEL", btn_pay: "🖨️ PAY",
+                sales_overview: "Sales Overview", rev_today: "Today's Revenue", rev_7: "7-Day Revenue", rev_30: "30-Day Revenue", exp_today: "Today's Expenses",
+                log_exp: "💸 Log Expense", exp_csv: "📊 Export CSV", clear_dash: "🗑️ Clear Data"
+            },
+            my: {
+                nav_tables: "စားပွဲများ", nav_pos: "အရောင်း", nav_queue: "အော်ဒါများ", nav_work: "ဝန်ထမ်းနေရာ", nav_dash: "ရောင်းအား", nav_menu: "မီနူး", nav_settings: "ဆက်တင်များ",
+                logout: "ထွက်မည်", select_table: "မှာယူရန် စားပွဲရွေးပါ", add: "ထည့်မည်", categories: "အမျိုးအစားများ", search: "အမည် (သို့) ကုဒ်ဖြင့် ရှာပါ...",
+                item: "အမည်", qty: "အရေအတွက်", price: "စျေးနှုန်း", subtotal: "သင့်ငွေ:", discount: "လျှော့စျေး", tax: "အခွန်", total: "စုစုပေါင်း:",
+                btn_kot: "🍳 မီးဖိုချောင်သို့", btn_save: "💾 သိမ်းမည်", btn_cancel: "🗑️ ဖျက်မည်", btn_pay: "🖨️ ငွေရှင်းမည်",
+                sales_overview: "ရောင်းရငွေ အနှစ်ချုပ်", rev_today: "ယနေ့ရောင်းရငွေ", rev_7: "၇ ရက်စာ ရောင်းရငွေ", rev_30: "၃၀ ရက်စာ ရောင်းရငွေ", exp_today: "ယနေ့အသုံးစရိတ်",
+                log_exp: "💸 အသုံးစရိတ် မှတ်မည်", exp_csv: "📊 CSV ထုတ်မည်", clear_dash: "🗑️ ဒေတာဖျက်မည်"
+            }
+        };
+        
+        let currentLang = localStorage.getItem('tino_lang') || 'en';
+
+        // --- NEW: FAVICON LOGIC ---
+        function updateFavicon(iconVal) {
+            let link = document.getElementById('dynamic-favicon');
+            if (iconVal.startsWith('http') || iconVal.startsWith('data:')) {
+                link.href = iconVal;
+            } else {
+                link.href = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${iconVal}</text></svg>`;
+            }
+        }
+
+        // --- NEW: RUSH MODE LOGIC ---
+        function toggleRushMode(enable, showFeedback = true) {
+            appConfig.rushMode = enable;
+            const body = document.body;
+            const rushCheckbox = document.getElementById('config-rush');
+            
+            if (enable) {
+                body.classList.add('rush-mode');
+                if(rushCheckbox) rushCheckbox.checked = true;
+                if(showFeedback) { playSuccess(); showToast("🚀 Rush Mode ACTIVE", "info"); botResponse("Rush mode enabled."); }
+            } else {
+                body.classList.remove('rush-mode');
+                if(rushCheckbox) rushCheckbox.checked = false;
+                if(showFeedback) { playClick(); showToast("🐢 Rush Mode Disabled", "info"); botResponse("Rush mode disabled."); }
+            }
+            saveConfigOnly();
+            renderPOSMenu(); 
+        }
+        function saveConfigOnly() { localStorage.setItem('tino_config', JSON.stringify(appConfig)); syncToCloud(); }
+
+        // --- NEW: ELITE BOT LOGIC ---
+        function toggleEliteBot() {
+            const panel = document.getElementById('elite-bot-panel');
+            const input = document.getElementById('bot-console-input');
+            panel.classList.toggle('hidden');
+            panel.classList.toggle('open');
+            playClick();
+            if(panel.classList.contains('open')) { setTimeout(()=> input.focus(), 100); }
+        }
+
+        function botResponse(text, type = 'normal') {
+            const area = document.getElementById('bot-response-area');
+            const p = document.createElement('p');
+            if(type === 'error') p.className = "text-red-400";
+            if(type === 'success') p.className = "text-sky-400 font-bold";
+            p.innerText = `> ${text}`;
+            area.appendChild(p);
+            area.scrollTop = area.scrollHeight; 
+        }
+
+        document.getElementById('bot-console-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const input = e.target.value.trim();
+                if(!input) return;
+                e.target.value = ''; 
+                botResponse(input, 'success'); 
+                
+                const cmd = input.toLowerCase();
+                
+                if (cmd === 'help') { botResponse("Commands: sales today | clear cart | go [page] | rush on/off | exit"); }
+                else if (cmd === 'sales today') {
+                    const today = new Date().setHours(0,0,0,0);
+                    const total = sales.filter(s => (s.timestamp||0) >= today).reduce((sum, s) => sum + s.total, 0);
+                    botResponse(`Today's Revenue: ${total.toLocaleString()} Ks`);
+                }
+                else if (cmd === 'clear cart') { requireOverride(cancelOrder); botResponse("Attempting to clear cart..."); }
+                else if (cmd.startsWith('go ')) {
+                    const page = cmd.substring(3);
+                    const validPages = ['pos', 'tables', 'dash', 'work', 'menu', 'settings'];
+                    if(validPages.includes(page)) {
+                        const target = page === 'dash' ? 'dashboard' : page;
+                        showPage(target); botResponse(`Navigating to ${target}...`);
+                    } else { botResponse(`Invalid page. Try: ${validPages.join(', ')}`, 'error'); }
+                }
+                else if (cmd === 'rush on') { toggleRushMode(true); }
+                else if (cmd === 'rush off') { toggleRushMode(false); }
+                else if (cmd === 'exit' || cmd === 'quit') { toggleEliteBot(); }
+                else { botResponse(`Unknown command: '${cmd}'. Type 'help'.`, 'error'); }
+            }
+        });
+
+        // --- NEW: MANAGER OVERRIDE LOGIC ---
         function requireOverride(actionFunction) {
             if (currentUserRole === 'staff') {
                 pendingAction = actionFunction;
@@ -747,7 +908,7 @@
             playClick();
         }
 
-        // NEW: Auto-Generate Menu Code
+        // --- NEW: AUTO-GENERATE MENU CODES ---
         function autoGenerateCode() {
             const catInput = document.getElementById('menu-cat').value.trim().toUpperCase();
             const codeInput = document.getElementById('menu-code');
@@ -768,7 +929,7 @@
             }
         }
 
-        // NEW: Shift Notes Functions
+        // --- NEW: DIGITAL SHIFT NOTES LOGIC ---
         function postShiftNote() {
             const input = document.getElementById('new-note-input');
             const text = input.value.trim();
@@ -794,18 +955,18 @@
             if (!container) return;
             
             if (shiftNotes.length === 0) {
-                container.innerHTML = '<p class="text-slate-400 italic font-bold text-sm">No notes posted yet.</p>';
+                container.innerHTML = '<p class="text-slate-400 italic font-bold text-sm col-span-full">No notes posted yet.</p>';
                 return;
             }
             
             container.innerHTML = shiftNotes.map((note, index) => `
-                <div class="bg-yellow-50 p-4 rounded-xl shadow-sm border border-yellow-200 relative group animate-pop-in">
+                <div class="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-200 relative group animate-pop-in">
                     <p class="text-slate-800 font-medium mb-3">${note.text}</p>
-                    <div class="flex justify-between items-center border-t border-yellow-200/50 pt-2">
-                        <span class="text-xs font-bold text-slate-500">${note.author}</span>
-                        <span class="text-[10px] text-slate-400">${note.time}</span>
+                    <div class="flex justify-between items-center border-t border-amber-200/50 pt-2">
+                        <span class="text-xs font-black text-amber-700">${note.author}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${note.time}</span>
                     </div>
-                    ${(currentUserRole === 'god' || currentUserRole === 'manager') ? `<button onclick="deleteNote(${index})" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition shadow">×</button>` : ''}
+                    ${(currentUserRole === 'god' || currentUserRole === 'manager') ? `<button onclick="deleteNote(${index})" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition shadow">×</button>` : ''}
                 </div>
             `).join('');
         }
@@ -818,27 +979,7 @@
             playDelete();
         }
 
-        // 🌐 i18n Translation Dictionary
-        const i18n = {
-            en: {
-                nav_tables: "Floor Plan", nav_pos: "Terminal", nav_queue: "Live Queue", nav_work: "Workspace", nav_dash: "Dashboard", nav_menu: "Menu", nav_settings: "Settings",
-                logout: "Log Out", select_table: "Select Table to Order", add: "Add", categories: "Categories", search: "Search by name or code...",
-                item: "ITEM", qty: "QTY", price: "PRICE", subtotal: "Subtotal:", discount: "Discount", tax: "Tax", total: "TOTAL:",
-                btn_kot: "🍳 KOT", btn_save: "💾 SAVE", btn_cancel: "🗑️ CANCEL", btn_pay: "🖨️ PAY",
-                sales_overview: "Sales Overview", rev_today: "Today's Revenue", rev_7: "7-Day Revenue", rev_30: "30-Day Revenue", exp_today: "Today's Expenses",
-                log_exp: "💸 Log Expense", exp_csv: "📊 Export CSV", clear_dash: "🗑️ Clear Data"
-            },
-            my: {
-                nav_tables: "စားပွဲများ", nav_pos: "အရောင်း", nav_queue: "အော်ဒါများ", nav_work: "ဝန်ထမ်းနေရာ", nav_dash: "ရောင်းအား", nav_menu: "မီနူး", nav_settings: "ဆက်တင်များ",
-                logout: "ထွက်မည်", select_table: "မှာယူရန် စားပွဲရွေးပါ", add: "ထည့်မည်", categories: "အမျိုးအစားများ", search: "အမည် (သို့) ကုဒ်ဖြင့် ရှာပါ...",
-                item: "အမည်", qty: "အရေအတွက်", price: "စျေးနှုန်း", subtotal: "သင့်ငွေ:", discount: "လျှော့စျေး", tax: "အခွန်", total: "စုစုပေါင်း:",
-                btn_kot: "🍳 မီးဖိုချောင်သို့", btn_save: "💾 သိမ်းမည်", btn_cancel: "🗑️ ဖျက်မည်", btn_pay: "🖨️ ငွေရှင်းမည်",
-                sales_overview: "ရောင်းရငွေ အနှစ်ချုပ်", rev_today: "ယနေ့ရောင်းရငွေ", rev_7: "၇ ရက်စာ ရောင်းရငွေ", rev_30: "၃၀ ရက်စာ ရောင်းရငွေ", exp_today: "ယနေ့အသုံးစရိတ်",
-                log_exp: "💸 အသုံးစရိတ် မှတ်မည်", exp_csv: "📊 CSV ထုတ်မည်", clear_dash: "🗑️ ဒေတာဖျက်မည်"
-            }
-        };
-        
-        let currentLang = localStorage.getItem('tino_lang') || 'en';
+        // --- CORE SYSTEM FUNCTIONS ---
 
         function updateLang() {
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -864,21 +1005,6 @@
             if (Array.isArray(openTabs[t])) {
                 openTabs[t] = { items: openTabs[t], startTime: Date.now() };
             }
-        }
-
-        function parseLocalDate(str) {
-            if(!str) return new Date();
-            let datePart = str.split(',')[0].trim();
-            let d = new Date(datePart);
-            if(!isNaN(d)) return d;
-            
-            let parts = datePart.split(/[\/\-]/);
-            if(parts.length === 3) {
-                if (parseInt(parts[0]) > 12) return new Date(parts[2], parts[1]-1, parts[0]);
-                else if (parseInt(parts[1]) > 12) return new Date(parts[2], parts[0]-1, parts[1]);
-                else return new Date(parts[2], parts[1]-1, parts[0]); 
-            }
-            return new Date();
         }
 
         window.addEventListener('firebase-ready', () => { console.log("🔥 Firebase initialized."); });
@@ -917,9 +1043,7 @@
             
             container.appendChild(toast);
             
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-            });
+            requestAnimationFrame(() => { toast.classList.remove('translate-x-full', 'opacity-0'); });
             
             setTimeout(() => {
                 if(toast.parentElement) {
@@ -976,73 +1100,36 @@
             });
         }
 
-        function openExpenseModal() {
-            document.getElementById('exp-amount').value = "";
-            document.getElementById('exp-note').value = "";
-            document.getElementById('expense-modal').classList.remove('hidden');
-        }
-
-        function closeExpenseModal() {
-            document.getElementById('expense-modal').classList.add('hidden');
-        }
+        function openExpenseModal() { document.getElementById('exp-amount').value = ""; document.getElementById('exp-note').value = ""; document.getElementById('expense-modal').classList.remove('hidden'); }
+        function closeExpenseModal() { document.getElementById('expense-modal').classList.add('hidden'); }
 
         function saveExpense() {
             const amount = parseInt(document.getElementById('exp-amount').value);
             const cat = document.getElementById('exp-cat').value;
             const note = document.getElementById('exp-note').value.trim();
-            
             if(!amount || isNaN(amount) || amount <= 0) return showToast("Enter a valid amount", "error");
             
-            expenses.push({
-                id: Date.now(),
-                timestamp: Date.now(),
-                time: new Date().toLocaleTimeString(),
-                dateObj: new Date().toLocaleString(),
-                amount: amount,
-                category: cat,
-                note: note,
-                user: currentUsername
-            });
-            
+            expenses.push({ id: Date.now(), timestamp: Date.now(), time: new Date().toLocaleTimeString(), dateObj: new Date().toLocaleString(), amount: amount, category: cat, note: note, user: currentUsername });
             localStorage.setItem('tino_expenses', JSON.stringify(expenses));
-            syncToCloud();
-            closeExpenseModal();
-            renderDashboard();
-            showToast("Expense Logged into System", "success");
-            notifyOS('Expense Logged', `${amount.toLocaleString()} Ks taken for ${cat}`);
+            syncToCloud(); closeExpenseModal(); renderDashboard(); showToast("Expense Logged into System", "success"); notifyOS('Expense Logged', `${amount.toLocaleString()} Ks taken for ${cat}`);
         }
 
         function printZReport() {
-            const nowMs = Date.now();
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayStart = today.getTime();
-
+            const todayStart = new Date().setHours(0, 0, 0, 0);
             const todaySales = sales.filter(s => (s.timestamp || 0) >= todayStart);
             const todayExp = expenses.filter(e => (e.timestamp || 0) >= todayStart);
-            
             if(todaySales.length === 0 && todayExp.length === 0) return showToast("No sales or expenses recorded today.", "error");
-
-            document.getElementById('actual-cash-count').value = "";
-            document.getElementById('blind-count-modal').classList.remove('hidden');
+            document.getElementById('actual-cash-count').value = ""; document.getElementById('blind-count-modal').classList.remove('hidden');
         }
 
-        function closeBlindCountModal() {
-            document.getElementById('blind-count-modal').classList.add('hidden');
-        }
+        function closeBlindCountModal() { document.getElementById('blind-count-modal').classList.add('hidden'); }
 
         function processZReportWithCount() {
             const actualCashInput = document.getElementById('actual-cash-count').value;
-            if(!actualCashInput || isNaN(actualCashInput) || actualCashInput < 0) {
-                return showToast("Please enter a valid cash amount.", "error");
-            }
+            if(!actualCashInput || isNaN(actualCashInput) || actualCashInput < 0) return showToast("Please enter a valid cash amount.", "error");
             const actualCash = parseInt(actualCashInput);
 
-            const nowMs = Date.now();
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayStart = today.getTime();
-
+            const todayStart = new Date().setHours(0, 0, 0, 0);
             const todaySales = sales.filter(s => (s.timestamp || 0) >= todayStart);
             const todayExp = expenses.filter(e => (e.timestamp || 0) >= todayStart);
             
@@ -1052,7 +1139,6 @@
             const difference = actualCash - expectedCash;
 
             document.getElementById('z-report-date').innerText = "Printed: " + new Date().toLocaleString();
-            
             let diffColor = difference >= 0 ? "text-emerald-600" : "text-red-600";
             let diffSign = difference > 0 ? "+" : "";
 
@@ -1060,12 +1146,10 @@
             htmlStr += `<div class="flex justify-between mt-2 pt-2 border-t border-dashed border-gray-400 font-bold"><span>GROSS SALES:</span><span>${totalRev.toLocaleString()} Ks</span></div>`;
             htmlStr += `<div class="flex justify-between text-red-600 font-bold"><span>TOTAL EXPENSES:</span><span>-${totalExp.toLocaleString()} Ks</span></div>`;
             htmlStr += `<div class="flex justify-between font-black text-lg mt-2 pt-2 border-t border-dashed border-black"><span>EXPECTED CASH:</span><span>${expectedCash.toLocaleString()} Ks</span></div>`;
-            
             htmlStr += `<div class="flex justify-between font-black text-lg mt-2 pt-2 border-t border-dashed border-black"><span>ACTUAL COUNT:</span><span>${actualCash.toLocaleString()} Ks</span></div>`;
             htmlStr += `<div class="flex justify-between font-black text-lg ${diffColor}"><span>DIFFERENCE:</span><span>${diffSign}${difference.toLocaleString()} Ks</span></div>`;
             
             document.getElementById('z-report-stats').innerHTML = htmlStr;
-
             closeBlindCountModal();
 
             executePrint('z-report-area', async () => {
@@ -1076,38 +1160,26 @@
         }
 
         function notifyOS(title, message) {
-            if (window !== window.top) {
-                window.parent.postMessage({ type: 'SOVEREIGN_NOTIFY', title: title, message: message }, '*');
-            } else {
-                showToast(`${title}: ${message}`, 'info'); 
-            }
+            if (window !== window.top) { window.parent.postMessage({ type: 'SOVEREIGN_NOTIFY', title: title, message: message }, '*'); } 
+            else { showToast(`${title}: ${message}`, 'info'); }
         }
 
         if (window !== window.top) {
             console.log("🖥️ Sovereign OS Environment Detected");
-            document.body.style.borderRadius = "0px"; 
-            document.body.style.background = "rgba(255, 255, 255, 0.1)"; 
+            document.body.style.borderRadius = "0px"; document.body.style.background = "rgba(255, 255, 255, 0.1)"; 
             window.parent.postMessage({ type: 'SOVEREIGN_APP_READY', appName: 'GoodCool POS', version: 'v16' }, '*');
         }
 
-        let patternNodes = [];
-        let isDrawingPattern = false;
-        let patternSvg = document.getElementById('pattern-lines');
-        const dots = document.querySelectorAll('.pattern-dot');
-        const patternContainer = document.getElementById('pattern-lock');
+        let patternNodes = []; let isDrawingPattern = false; let patternSvg = document.getElementById('pattern-lines');
+        const dots = document.querySelectorAll('.pattern-dot'); const patternContainer = document.getElementById('pattern-lock');
 
-        function getDotCenter(dot) {
-            const rect = dot.getBoundingClientRect();
-            const containerRect = patternContainer.getBoundingClientRect();
-            return { x: rect.left - containerRect.left + rect.width / 2, y: rect.top - containerRect.top + rect.height / 2 };
-        }
+        function getDotCenter(dot) { const rect = dot.getBoundingClientRect(); const containerRect = patternContainer.getBoundingClientRect(); return { x: rect.left - containerRect.left + rect.width / 2, y: rect.top - containerRect.top + rect.height / 2 }; }
 
         patternContainer.addEventListener('pointerdown', (e) => {
             isDrawingPattern = true; patternNodes = [];
             patternSvg.innerHTML = '<polyline id="pattern-path" fill="none" stroke="#03e9f4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><line id="dynamic-line" fill="none" stroke="#03e9f4" stroke-width="6" opacity="0.5" stroke-linecap="round"/>';
             dots.forEach(d => d.classList.remove('active', 'error'));
-            handlePointerMove(e);
-            patternContainer.setPointerCapture(e.pointerId);
+            handlePointerMove(e); patternContainer.setPointerCapture(e.pointerId);
         });
 
         patternContainer.addEventListener('pointermove', handlePointerMove);
@@ -1116,8 +1188,7 @@
             if(!isDrawingPattern) return;
             isDrawingPattern = false;
             const dLine = document.getElementById('dynamic-line'); if(dLine) dLine.remove();
-            checkPattern();
-            patternContainer.releasePointerCapture(e.pointerId);
+            checkPattern(); patternContainer.releasePointerCapture(e.pointerId);
         });
 
         function handlePointerMove(e) {
@@ -1125,9 +1196,7 @@
             const target = document.elementFromPoint(e.clientX, e.clientY);
             if (target && target.classList.contains('pattern-dot')) {
                 const id = parseInt(target.getAttribute('data-id'));
-                if (!patternNodes.includes(id)) {
-                    patternNodes.push(id); target.classList.add('active'); updatePatternSvg();
-                }
+                if (!patternNodes.includes(id)) { patternNodes.push(id); target.classList.add('active'); updatePatternSvg(); }
             }
             if (patternNodes.length > 0) {
                 const lastDot = document.querySelector(`.pattern-dot[data-id="${patternNodes[patternNodes.length-1]}"]`);
@@ -1143,37 +1212,21 @@
             if(!path) return;
             const points = patternNodes.map(id => {
                 const dot = document.querySelector(`.pattern-dot[data-id="${id}"]`);
-                const center = getDotCenter(dot);
-                return `${center.x},${center.y}`;
+                const center = getDotCenter(dot); return `${center.x},${center.y}`;
             }).join(' ');
             path.setAttribute('points', points);
         }
 
         function checkPattern() {
             const p = patternNodes.join('');
-            if (p === '1478963') {
-                currentUserRole = 'god'; currentUsername = 'Owner';
-                document.getElementById('btn-factory-reset').classList.remove('hidden'); document.getElementById('btn-clear-queue').classList.remove('hidden');
-                unlockSystem("GOD MODE - Owner Panel");
-            } 
-            else if (p === '1235789') {
-                currentUserRole = 'manager'; currentUsername = 'Manager';
-                unlockSystem("Manager Edition");
-            } 
-            else if (p === '14789') {
-                currentUserRole = 'staff'; currentUsername = 'Staff';
-                document.getElementById('link-dashboard').classList.add('hidden'); document.getElementById('link-settings').classList.add('hidden');
-                document.getElementById('link-menu').classList.add('hidden'); document.getElementById('add-table-controls').classList.add('hidden');
-                unlockSystem("Staff Edition");
-            } 
-            else if (p === '321478965') {
-                playSuccess(); startMiniGame(); resetPattern();
-            } 
+            if (p === '1478963') { currentUserRole = 'god'; currentUsername = 'Owner'; document.getElementById('btn-factory-reset').classList.remove('hidden'); document.getElementById('btn-clear-queue').classList.remove('hidden'); unlockSystem("GOD MODE - Owner Panel"); } 
+            else if (p === '1235789') { currentUserRole = 'manager'; currentUsername = 'Manager'; unlockSystem("Manager Edition"); } 
+            else if (p === '14789') { currentUserRole = 'staff'; currentUsername = 'Staff'; document.getElementById('link-dashboard').classList.add('hidden'); document.getElementById('link-settings').classList.add('hidden'); document.getElementById('link-menu').classList.add('hidden'); document.getElementById('add-table-controls').classList.add('hidden'); unlockSystem("Staff Edition"); } 
+            else if (p === '321478965') { playSuccess(); startMiniGame(); resetPattern(); } 
             else {
                 dots.forEach(d => { if(d.classList.contains('active')) { d.classList.remove('active'); d.classList.add('error'); }});
                 const path = document.getElementById('pattern-path'); if(path) path.setAttribute('stroke', '#ef4444');
-                showToast("Incorrect Pattern. Try Again.", "error");
-                setTimeout(resetPattern, 800);
+                showToast("Incorrect Pattern. Try Again.", "error"); setTimeout(resetPattern, 800);
             }
         }
 
@@ -1181,27 +1234,15 @@
 
         document.addEventListener('keydown', (e) => {
             const loginLayer = document.getElementById('login-layer');
-            
             if (!loginLayer.classList.contains('hidden') && document.activeElement.tagName !== 'INPUT') {
                 const key = e.key.toLowerCase();
-                
-                if (key === 'u') {
-                    currentUserRole = 'god'; currentUsername = 'Owner';
-                    document.getElementById('btn-factory-reset').classList.remove('hidden'); document.getElementById('btn-clear-queue').classList.remove('hidden');
-                    unlockSystem("GOD MODE - Owner Panel");
-                } else if (key === 'z') {
-                    currentUserRole = 'manager'; currentUsername = 'Manager';
-                    unlockSystem("Manager Edition");
-                } else if (key === 'l') {
-                    currentUserRole = 'staff'; currentUsername = 'Staff';
-                    document.getElementById('link-dashboard').classList.add('hidden'); document.getElementById('link-settings').classList.add('hidden');
-                    document.getElementById('link-menu').classList.add('hidden'); document.getElementById('add-table-controls').classList.add('hidden');
-                    unlockSystem("Staff Edition");
-                } else if (key === 'g') { playSuccess(); startMiniGame(); }
+                if (key === 'u') { currentUserRole = 'god'; currentUsername = 'Owner'; document.getElementById('btn-factory-reset').classList.remove('hidden'); document.getElementById('btn-clear-queue').classList.remove('hidden'); unlockSystem("GOD MODE - Owner Panel"); } 
+                else if (key === 'z') { currentUserRole = 'manager'; currentUsername = 'Manager'; unlockSystem("Manager Edition"); } 
+                else if (key === 'l') { currentUserRole = 'staff'; currentUsername = 'Staff'; document.getElementById('link-dashboard').classList.add('hidden'); document.getElementById('link-settings').classList.add('hidden'); document.getElementById('link-menu').classList.add('hidden'); document.getElementById('add-table-controls').classList.add('hidden'); unlockSystem("Staff Edition"); } 
+                else if (key === 'g') { playSuccess(); startMiniGame(); }
             }
         });
 
-        // UPDATED: Sync Shift Notes
         async function syncToCloud() {
             if (!window.db || isSyncingFromCloud) return;
             const dataToSync = { config: appConfig, menu: menu, tables: tables, sales: sales, tabs: openTabs, queue: queueList, tracker: dailyTracker, shifts: shiftLogs, expenses: expenses, notes: shiftNotes };
@@ -1211,7 +1252,6 @@
             } catch(error) { console.error("Cloud Sync Error:", error); }
         }
 
-        // UPDATED: Listen for Shift Notes
         function initFirebaseListener() {
             if (!window.db) return;
             window.fbOnSnapshot(window.fbDoc(window.db, "goodcool_pos", "master_state"), (doc) => {
@@ -1225,9 +1265,7 @@
                     if(cloudData.sales) sales = cloudData.sales;
                     if(cloudData.tabs) {
                         openTabs = cloudData.tabs;
-                        for (let t in openTabs) {
-                            if (Array.isArray(openTabs[t])) openTabs[t] = { items: openTabs[t], startTime: Date.now() };
-                        }
+                        for (let t in openTabs) { if (Array.isArray(openTabs[t])) openTabs[t] = { items: openTabs[t], startTime: Date.now() }; }
                     }
                     if(cloudData.queue) queueList = cloudData.queue;
                     if(cloudData.tracker) dailyTracker = cloudData.tracker;
@@ -1255,38 +1293,21 @@
         }
 
         window.addEventListener('load', () => { 
-            setTimeout(() => { 
-                const loader = document.getElementById('loader-layer');
-                loader.style.opacity = '0'; setTimeout(() => loader.classList.add('hidden'), 800); 
-            }, 1000); 
+            setTimeout(() => { const loader = document.getElementById('loader-layer'); loader.style.opacity = '0'; setTimeout(() => loader.classList.add('hidden'), 800); }, 1000); 
             
             const todayStr = new Date().toLocaleDateString();
             if(dailyTracker.date !== todayStr) {
-                dailyTracker = { date: todayStr, count: 0 };
-                queueList = []; 
-                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
-                localStorage.setItem('tino_queue', JSON.stringify(queueList));
+                dailyTracker = { date: todayStr, count: 0 }; queueList = []; 
+                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker)); localStorage.setItem('tino_queue', JSON.stringify(queueList));
             }
 
-            setInterval(() => {
-                if(document.getElementById('page-tables') && !document.getElementById('page-tables').classList.contains('hidden')) {
-                    renderTableManager();
-                }
-            }, 30000);
+            setInterval(() => { if(document.getElementById('page-tables') && !document.getElementById('page-tables').classList.contains('hidden')) { renderTableManager(); } }, 30000);
 
             window.addEventListener('online', () => {
-                let statusBadge = document.getElementById('cloud-status');
-                statusBadge.innerText = '☁️ Synced (Online)';
-                statusBadge.className = 'text-xs bg-emerald-500/20 text-emerald-700 font-bold px-2 py-1 rounded';
-                syncToCloud(); 
+                let statusBadge = document.getElementById('cloud-status'); statusBadge.innerText = '☁️ Synced (Online)'; statusBadge.className = 'text-xs bg-emerald-500/20 text-emerald-700 font-bold px-2 py-1 rounded'; syncToCloud(); 
             });
-            
             window.addEventListener('offline', () => {
-                let statusBadge = document.getElementById('cloud-status');
-                statusBadge.innerText = '🚫 Offline Mode';
-                statusBadge.className = 'text-xs bg-red-500/20 text-red-700 font-bold px-2 py-1 rounded';
-                statusBadge.classList.remove('hidden');
-                showToast("Lost Internet Connection. Running Locally Offline.", "error");
+                let statusBadge = document.getElementById('cloud-status'); statusBadge.innerText = '🚫 Offline Mode'; statusBadge.className = 'text-xs bg-red-500/20 text-red-700 font-bold px-2 py-1 rounded'; statusBadge.classList.remove('hidden'); showToast("Lost Internet Connection. Running Locally Offline.", "error");
             });
         });
 
@@ -1304,15 +1325,17 @@
 
         function toggleMobileMenu() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); playClick(); }
 
-        function toggleMobileCart() {
-            const cartArea = document.getElementById('receipt-area');
-            cartArea.classList.toggle('mobile-open');
-            playClick();
-        }
+        function toggleMobileCart() { const cartArea = document.getElementById('receipt-area'); cartArea.classList.toggle('mobile-open'); playClick(); }
 
         function initApp() {
             if(!openTabs[activeTable]) openTabs[activeTable] = { items: [], startTime: Date.now() };
-            applyCustomStyling(); loadSettingsUI(); updateLang(); renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace(); renderShiftNotes();
+            applyCustomStyling(); loadSettingsUI(); updateLang(); 
+            
+            // Apply New Features from Settings
+            updateFavicon(appConfig.customFavicon || '🍔');
+            toggleRushMode(appConfig.rushMode, false);
+
+            renderTableManager(); renderMenuManager(); renderDashboard(); renderQueue(); renderWorkspace(); renderShiftNotes();
             document.getElementById('pos-table-select').innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join('');
             switchTable(tables[0]);
             initFirebaseListener();
@@ -1337,9 +1360,7 @@
         }
 
         function applyCustomStyling() {
-            let bgUrl = appConfig.customBg || '';
-            let videoEl = document.getElementById('dynamic-bg-video');
-
+            let bgUrl = appConfig.customBg || ''; let videoEl = document.getElementById('dynamic-bg-video');
             if (bgUrl.match(/\.(mp4|webm|ogg)$/i)) {
                 document.body.style.background = 'transparent'; 
                 if (!videoEl) {
@@ -1355,16 +1376,14 @@
                 else { document.body.style.background = `linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)`; }
             }
 
-            let styleBlock = document.getElementById('custom-styling-block');
-            let customCss = '';
+            let styleBlock = document.getElementById('custom-styling-block'); let customCss = '';
             if (appConfig.customCursor) customCss += `* { cursor: url('${appConfig.customCursor}'), auto !important; } .glass-button:hover, button:hover, a:hover { cursor: url('${appConfig.customCursor}'), pointer !important; }\n`;
             let fontLink = document.getElementById('dynamic-google-font');
             if (appConfig.customFont) {
                 const formattedName = appConfig.customFont.replace(/\s+/g, '+');
                 const fontUrl = `https://fonts.googleapis.com/css2?family=${formattedName}:wght@400;700;900&display=swap`;
                 if (!fontLink) { fontLink = document.createElement('link'); fontLink.id = 'dynamic-google-font'; fontLink.rel = 'stylesheet'; document.head.appendChild(fontLink); }
-                fontLink.href = fontUrl;
-                customCss += `body, button, input, select, p, h1, h2, h3, h4, span, div, table, th, td { font-family: '${appConfig.customFont}', 'Segoe UI', sans-serif !important; }\n`;
+                fontLink.href = fontUrl; customCss += `body, button, input, select, p, h1, h2, h3, h4, span, div, table, th, td { font-family: '${appConfig.customFont}', 'Segoe UI', sans-serif !important; }\n`;
             } else { if (fontLink) fontLink.remove(); }
             styleBlock.innerHTML = customCss;
         }
@@ -1372,53 +1391,33 @@
         function toggleShift() {
             playClick();
             let openShift = shiftLogs.find(s => s.name === currentUsername && !s.outTime);
-            if(openShift) {
-                openShift.outTime = new Date().toLocaleString();
-                showToast("Clocked Out Successfully", "info");
-            } else {
-                shiftLogs.push({ name: currentUsername, role: currentUserRole, inTime: new Date().toLocaleString(), outTime: null });
-                showToast("Clocked In Successfully", "success");
-            }
-            localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs));
-            syncToCloud();
-            renderWorkspace();
+            if(openShift) { openShift.outTime = new Date().toLocaleString(); showToast("Clocked Out Successfully", "info"); } 
+            else { shiftLogs.push({ name: currentUsername, role: currentUserRole, inTime: new Date().toLocaleString(), outTime: null }); showToast("Clocked In Successfully", "success"); }
+            localStorage.setItem('tino_shifts', JSON.stringify(shiftLogs)); syncToCloud(); renderWorkspace();
         }
 
         function renderWorkspace() {
-            document.getElementById('work-user-name').innerText = currentUsername;
-            document.getElementById('work-user-role').innerText = currentUserRole.toUpperCase();
-
+            document.getElementById('work-user-name').innerText = currentUsername; document.getElementById('work-user-role').innerText = currentUserRole.toUpperCase();
             let openShift = shiftLogs.find(s => s.name === currentUsername && !s.outTime);
-            let btn = document.getElementById('btn-timeclock');
-            let status = document.getElementById('work-status');
+            let btn = document.getElementById('btn-timeclock'); let status = document.getElementById('work-status');
 
             if(openShift) {
-                btn.innerText = "CLOCK OUT";
-                btn.className = "w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-red-500 hover:bg-red-400";
-                status.innerText = "Status: CLOCKED IN (" + openShift.inTime.split(', ')[1] + ")";
-                status.className = "text-emerald-600 font-bold mt-2 text-sm";
+                btn.innerText = "CLOCK OUT"; btn.className = "w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-red-500 hover:bg-red-400";
+                status.innerText = "Status: CLOCKED IN (" + openShift.inTime.split(', ')[1] + ")"; status.className = "text-emerald-600 font-bold mt-2 text-sm";
             } else {
-                btn.innerText = "CLOCK IN";
-                btn.className = "w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-emerald-500 hover:bg-emerald-400";
-                status.innerText = "Status: CLOCKED OUT";
-                status.className = "text-slate-500 font-bold mt-2 text-sm";
+                btn.innerText = "CLOCK IN"; btn.className = "w-full py-4 rounded-xl font-black text-xl text-white transition active:scale-95 shadow-lg bg-emerald-500 hover:bg-emerald-400";
+                status.innerText = "Status: CLOCKED OUT"; status.className = "text-slate-500 font-bold mt-2 text-sm";
             }
 
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            
-            const mySales = sales.filter(s => {
-                return (s.timestamp || 0) >= todayStart && s.user === currentUsername;
-            }).reduce((sum, s) => sum + s.total, 0);
-            
+            const now = new Date(); const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const mySales = sales.filter(s => { return (s.timestamp || 0) >= todayStart && s.user === currentUsername; }).reduce((sum, s) => sum + s.total, 0);
             document.getElementById('work-personal-sales').innerText = mySales.toLocaleString() + " Ks";
 
             let logsTable = document.getElementById('work-logs');
             let displayLogs = (currentUserRole === 'god' || currentUserRole === 'manager') ? shiftLogs : shiftLogs.filter(s => s.name === currentUsername);
 
-            if(displayLogs.length === 0) {
-                logsTable.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500 italic">No shift logs found.</td></tr>`;
-            } else {
+            if(displayLogs.length === 0) { logsTable.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500 italic">No shift logs found.</td></tr>`; } 
+            else {
                 logsTable.innerHTML = displayLogs.slice().reverse().map(s => `
                     <tr class="border-b border-white/20 last:border-0">
                         <td class="p-4 font-bold text-slate-800">${s.name} <span class="text-xs text-slate-500 block uppercase">${s.role}</span></td>
@@ -1429,21 +1428,14 @@
             }
         }
 
-        function switchTable(tableName) {
-            activeTable = tableName;
-            if(!openTabs[activeTable]) openTabs[activeTable] = { items: [], startTime: Date.now() };
-            document.getElementById('pos-table-select').value = tableName;
-            document.getElementById('receipt-table-display').innerText = tableName;
-            renderCart(); renderPOSMenu();
-        }
+        function switchTable(tableName) { activeTable = tableName; if(!openTabs[activeTable]) openTabs[activeTable] = { items: [], startTime: Date.now() }; document.getElementById('pos-table-select').value = tableName; document.getElementById('receipt-table-display').innerText = tableName; renderCart(); renderPOSMenu(); }
         function selectFloorTable(tableName) { playClick(); switchTable(tableName); showPage('pos'); }
         function saveTabs() { localStorage.setItem('tino_tabs', JSON.stringify(openTabs)); syncToCloud(); }
 
         function openTransferModal(fromTable) {
             let tabData = openTabs[fromTable];
             if (!tabData || !tabData.items || tabData.items.length === 0) return showToast("This table is empty.", "error");
-            document.getElementById('transfer-from-name').innerText = fromTable;
-            document.getElementById('transfer-from-name').setAttribute('data-from', fromTable);
+            document.getElementById('transfer-from-name').innerText = fromTable; document.getElementById('transfer-from-name').setAttribute('data-from', fromTable);
             document.getElementById('transfer-to-select').innerHTML = tables.filter(t => t !== fromTable).map(t => `<option value="${t}">${t}</option>`).join('');
             document.getElementById('transfer-modal').classList.remove('hidden');
         }
@@ -1465,33 +1457,24 @@
                 toData.items = [...fromData.items]; 
                 toData.startTime = fromData.startTime || Date.now();
             }
-            openTabs[targetTable] = toData;
-            openTabs[fromTable] = { items: [], startTime: Date.now() };
+            openTabs[targetTable] = toData; openTabs[fromTable] = { items: [], startTime: Date.now() };
             closeTransferModal(); saveTabs(); switchTable(targetTable); renderTableManager(); 
             showToast("Order Transferred", "success");
         }
 
         function renderTableManager() { 
-            const list = document.getElementById('manager-table-list');
-            if(!list) return;
+            const list = document.getElementById('manager-table-list'); if(!list) return;
             const now = Date.now();
             
             list.innerHTML = tables.map((t, i) => {
-                const tableData = openTabs[t];
-                const isOccupied = tableData && tableData.items && tableData.items.length > 0;
-                
-                let bgClass = 'glass-panel border-transparent hover:border-sky-400';
-                let timerHtml = '';
+                const tableData = openTabs[t]; const isOccupied = tableData && tableData.items && tableData.items.length > 0;
+                let bgClass = 'glass-panel border-transparent hover:border-sky-400'; let timerHtml = '';
                 
                 if(isOccupied) {
                     const elapsedMins = Math.floor((now - tableData.startTime) / 60000);
-                    if(elapsedMins < 15) {
-                        bgClass = 'bg-emerald-500 border-emerald-600 text-white shadow-lg';
-                    } else if(elapsedMins < 30) {
-                        bgClass = 'bg-amber-500 border-amber-600 text-white shadow-lg';
-                    } else {
-                        bgClass = 'bg-red-600 border-red-700 text-white shadow-lg animate-pulse'; 
-                    }
+                    if(elapsedMins < 15) { bgClass = 'bg-emerald-500 border-emerald-600 text-white shadow-lg'; } 
+                    else if(elapsedMins < 30) { bgClass = 'bg-amber-500 border-amber-600 text-white shadow-lg'; } 
+                    else { bgClass = 'bg-red-600 border-red-700 text-white shadow-lg animate-pulse'; }
                     timerHtml = `<div class="absolute top-2 left-2 bg-black/30 px-2 py-1 rounded-lg text-[10px] font-black font-mono tracking-widest text-white backdrop-blur-md flex items-center gap-1"><span class="animate-spin text-red-400">●</span> ${elapsedMins}M</div>`;
                 }
                 
@@ -1502,18 +1485,13 @@
                 
                 return `<div onclick="selectFloorTable('${t}')" class="glass-panel aspect-square rounded-2xl flex flex-col items-center justify-center cursor-pointer border-2 transition transform hover:-translate-y-2 group relative ${bgClass}">${timerHtml}<span class="text-4xl mb-2 ${iconClass}">🪑</span><h3 class="font-black text-xl text-center leading-tight ${nameClass}">${t}</h3>${transferBtn}${delBtn}</div>`
             }).join(''); 
-            const sel = document.getElementById('pos-table-select');
-            if(sel) sel.innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join(''); 
+            const sel = document.getElementById('pos-table-select'); if(sel) sel.innerHTML = tables.map(t => `<option value="${t}">${t}</option>`).join(''); 
             localStorage.setItem('tino_tables', JSON.stringify(tables)); 
         }
         
         function addTable() { const input = document.getElementById('new-table-name'), name = input.value.trim(); if(name) { tables.push(name); input.value = ""; renderTableManager(); syncToCloud(); showToast("Table Added", "success"); } }
         
-        async function deleteTable(index) { 
-            if(await customConfirm(`Are you sure you want to delete ${tables[index]}?`, "Delete Table", "Delete", "danger")) { 
-                tables.splice(index, 1); renderTableManager(); syncToCloud(); showToast("Table Removed", "info"); 
-            } 
-        }
+        async function deleteTable(index) { if(await customConfirm(`Are you sure you want to delete ${tables[index]}?`, "Delete Table", "Delete", "danger")) { tables.splice(index, 1); renderTableManager(); syncToCloud(); showToast("Table Removed", "info"); } }
 
         function loadSettingsUI() {
             document.getElementById('config-tax').value = appConfig.tax;
@@ -1523,7 +1501,10 @@
             document.getElementById('config-bg').value = appConfig.customBg || '';
             document.getElementById('config-cursor').value = appConfig.customCursor || '';
             document.getElementById('config-font').value = appConfig.customFont || '';
-            document.getElementById('tax-percent').innerText = appConfig.tax;
+            
+            // New Setting Loaders
+            document.getElementById('config-rush').checked = appConfig.rushMode || false;
+            document.getElementById('config-favicon').value = appConfig.customFavicon || '🍔';
         }
 
         function saveSettings() {
@@ -1534,6 +1515,12 @@
             appConfig.customBg = document.getElementById('config-bg').value.trim();
             appConfig.customCursor = document.getElementById('config-cursor').value.trim();
             appConfig.customFont = document.getElementById('config-font').value.trim();
+            
+            // New Settings Savers
+            const newFavicon = document.getElementById('config-favicon').value || '🍔';
+            appConfig.customFavicon = newFavicon;
+            updateFavicon(newFavicon);
+
             localStorage.setItem('tino_config', JSON.stringify(appConfig));
             applyCustomStyling(); loadSettingsUI(); renderCart(); syncToCloud();
             showToast("Settings Saved Successfully", "success");
@@ -1631,11 +1618,8 @@
         }
 
         function renderCart() {
-            const list = document.getElementById('cart-list');
-            const discRow = document.getElementById('discount-row');
-            const mobileCount = document.getElementById('mobile-cart-count');
-            let tabData = openTabs[activeTable];
-            let tab = (tabData && tabData.items) ? tabData.items : [];
+            const list = document.getElementById('cart-list'); const discRow = document.getElementById('discount-row'); const mobileCount = document.getElementById('mobile-cart-count');
+            let tabData = openTabs[activeTable]; let tab = (tabData && tabData.items) ? tabData.items : [];
             
             if(mobileCount) {
                 const totalItems = tab.reduce((sum, item) => sum + item.qty, 0);
@@ -1644,7 +1628,7 @@
             }
             
             if (tab.length === 0) {
-                list.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 italic font-bold text-sm">Cart is empty</div>';
+                list.innerHTML = '<div class="h-full flex items-center justify-center text-slate-400 italic">Cart is empty</div>';
                 document.getElementById('subtotal').innerText = "0"; document.getElementById('tax-amt').innerText = "0"; document.getElementById('grand-total').innerText = "0";
                 discRow.style.display = 'none'; return;
             }
@@ -1683,8 +1667,7 @@
                 const INIT = '\x1B\x40'; const CUT = '\x1D\x56\x41\x00';
                 let device = await navigator.usb.requestDevice({ filters: [] });
                 await device.open(); await device.selectConfiguration(1); await device.claimInterface(0);
-                const encoder = new TextEncoder();
-                const data = encoder.encode(INIT + textData + '\n\n\n\n' + CUT);
+                const encoder = new TextEncoder(); const data = encoder.encode(INIT + textData + '\n\n\n\n' + CUT);
                 await device.transferOut(1, data); await device.close(); return true;
             } catch (error) { console.warn("WebUSB Print Failed. Falling back.", error); return false; }
         }
@@ -1712,42 +1695,20 @@
         }
 
         async function executePrint(containerId, onSuccess, escposText = null) {
-            if (appConfig.useWebUSB && escposText) {
-                let success = await executeWebUSBPrint(escposText);
-                if(success) { if(onSuccess) onSuccess(); return; }
-            }
+            if (appConfig.useWebUSB && escposText) { let success = await executeWebUSBPrint(escposText); if(success) { if(onSuccess) onSuccess(); return; } }
             
             const targetContainer = document.getElementById(containerId);
             const printHost = document.createElement('div');
-            printHost.id = 'print-host-container';
-            printHost.innerHTML = targetContainer.innerHTML;
+            printHost.id = 'print-host-container'; printHost.innerHTML = targetContainer.innerHTML;
             
-            printHost.style.position = 'fixed';
-            printHost.style.left = '0';
-            printHost.style.top = '0';
-            printHost.style.width = '320px'; 
-            printHost.style.height = 'auto'; 
-            printHost.style.background = 'white';
-            printHost.style.color = 'black';
-            printHost.style.zIndex = '999999';
-            printHost.style.padding = '20px';
-            printHost.style.boxSizing = 'border-box';
-            
+            printHost.style.position = 'fixed'; printHost.style.left = '0'; printHost.style.top = '0'; printHost.style.width = '320px'; printHost.style.height = 'auto'; printHost.style.background = 'white'; printHost.style.color = 'black'; printHost.style.zIndex = '999999'; printHost.style.padding = '20px'; printHost.style.boxSizing = 'border-box';
             document.body.appendChild(printHost);
             
             printHost.querySelectorAll('.no-print').forEach(el => el.remove());
-            
-            printHost.querySelectorAll('.print-item-row').forEach(el => { 
-                el.classList.remove('hidden'); 
-                el.style.display = 'flex'; 
-            });
+            printHost.querySelectorAll('.print-item-row').forEach(el => { el.classList.remove('hidden'); el.style.display = 'flex'; });
 
             let cartList = printHost.querySelector('#cart-list');
-            if(cartList) {
-                cartList.style.height = 'auto';
-                cartList.style.overflow = 'visible';
-                cartList.classList.remove('flex-1', 'overflow-y-auto', 'mb-4');
-            }
+            if(cartList) { cartList.style.height = 'auto'; cartList.style.overflow = 'visible'; cartList.classList.remove('flex-1', 'overflow-y-auto', 'mb-4'); }
 
             const isIPad = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -1755,40 +1716,19 @@
                 if (isIPad) {
                     if(await customConfirm("iPad Detected: Save as Image for USB Printer App? (Cancel to AirPrint)", "Print Method", "Save Image", "info")) {
                         html2canvas(printHost, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
-                            const link = document.createElement('a'); 
-                            link.download = `Print_${Date.now()}.png`; 
-                            link.href = canvas.toDataURL("image/png"); 
-                            link.click(); 
-                            document.body.removeChild(printHost);
+                            const link = document.createElement('a'); link.download = `Print_${Date.now()}.png`; link.href = canvas.toDataURL("image/png"); link.click(); document.body.removeChild(printHost);
                             if(onSuccess) onSuccess();
                         });
-                    } else { 
-                        document.body.classList.add('printing-mode');
-                        window.print(); 
-                        document.body.classList.remove('printing-mode');
-                        document.body.removeChild(printHost); 
-                        if(onSuccess) onSuccess(); 
-                    }
-                } else { 
-                    document.body.classList.add('printing-mode');
-                    window.print(); 
-                    document.body.classList.remove('printing-mode');
-                    document.body.removeChild(printHost); 
-                    if(onSuccess) onSuccess(); 
-                }
+                    } else { document.body.classList.add('printing-mode'); window.print(); document.body.classList.remove('printing-mode'); document.body.removeChild(printHost); if(onSuccess) onSuccess(); }
+                } else { document.body.classList.add('printing-mode'); window.print(); document.body.classList.remove('printing-mode'); document.body.removeChild(printHost); if(onSuccess) onSuccess(); }
             }, 300);
         }
 
         async function cancelOrder() {
             let tabData = openTabs[activeTable];
             if (!tabData || !tabData.items || tabData.items.length === 0) return showToast("Cart is already empty.", "info");
-            
             if (await customConfirm("Clear the cart and cancel this order?", "Cancel Order", "Yes, Cancel", "danger")) {
-                openTabs[activeTable] = { items: [], startTime: Date.now() };
-                saveTabs();
-                renderCart();
-                renderTableManager();
-                showToast("Order Cancelled", "info");
+                openTabs[activeTable] = { items: [], startTime: Date.now() }; saveTabs(); renderCart(); renderTableManager(); showToast("Order Cancelled", "info");
             }
         }
 
@@ -1801,10 +1741,8 @@
             const itemsList = tab.map(i => `${i.qty}x ${i.name}`).join(', ');
             let existingQueueItem = queueList.find(q => q.table === activeTable && q.status === 'preparing');
             
-            if (existingQueueItem) {
-                existingQueueItem.items = itemsList;
-                existingQueueItem.time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            } else {
+            if (existingQueueItem) { existingQueueItem.items = itemsList; existingQueueItem.time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); } 
+            else {
                 dailyTracker.count++;
                 const orderNo = "#" + String(dailyTracker.count).padStart(3, '0');
                 localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
@@ -1812,11 +1750,9 @@
             }
             
             localStorage.setItem('tino_queue', JSON.stringify(queueList));
-            renderQueue(); saveTabs(); renderTableManager(); 
-            notifyOS('Table Saved', `Order parked for ${activeTable}`);
+            renderQueue(); saveTabs(); renderTableManager(); notifyOS('Table Saved', `Order parked for ${activeTable}`);
 
-            const overlay = document.getElementById('success-overlay');
-            document.getElementById('overlay-text').innerText = "ORDER SAVED!"; 
+            const overlay = document.getElementById('success-overlay'); document.getElementById('overlay-text').innerText = "ORDER SAVED!"; 
             overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
 
             setTimeout(() => {
@@ -1837,39 +1773,20 @@
             let existingQueueItem = queueList.find(q => q.table === activeTable && q.status === 'preparing');
             let orderNo;
 
-            if (existingQueueItem) {
-                orderNo = existingQueueItem.orderNo;
-                existingQueueItem.time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            } else {
-                dailyTracker.count++;
-                orderNo = "#" + String(dailyTracker.count).padStart(3, '0');
-                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
-            }
+            if (existingQueueItem) { orderNo = existingQueueItem.orderNo; existingQueueItem.time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); } 
+            else { dailyTracker.count++; orderNo = "#" + String(dailyTracker.count).padStart(3, '0'); localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker)); }
 
             document.getElementById('receipt-date').innerText = new Date().toLocaleString();
             let rn = document.getElementById('receipt-order-no'); rn.innerText = "ORDER " + orderNo; rn.classList.remove('hidden');
 
             const orderTotal = parseInt(document.getElementById('grand-total').innerText.replace(/,/g, ''));
 
-            sales.push({ 
-                timestamp: Date.now(), 
-                time: new Date().toLocaleTimeString(), 
-                dateObj: new Date().toLocaleString(), 
-                table: activeTable, 
-                orderNo: orderNo, 
-                items: itemsList, 
-                total: orderTotal, 
-                rawItems: [...tab], 
-                appliedTax: appConfig.tax, 
-                appliedDiscount: appConfig.discount, 
-                user: currentUsername 
-            });
+            sales.push({ timestamp: Date.now(), time: new Date().toLocaleTimeString(), dateObj: new Date().toLocaleString(), table: activeTable, orderNo: orderNo, items: itemsList, total: orderTotal, rawItems: [...tab], appliedTax: appConfig.tax, appliedDiscount: appConfig.discount, user: currentUsername });
             localStorage.setItem('tino_sales', JSON.stringify(sales));
             
             notifyOS('Payment Received', `${orderTotal.toLocaleString()} Ks from ${activeTable}`);
 
-            const overlay = document.getElementById('success-overlay');
-            document.getElementById('overlay-text').innerText = "PRINTING..."; 
+            const overlay = document.getElementById('success-overlay'); document.getElementById('overlay-text').innerText = "PRINTING..."; 
             overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
 
             let escposText = generateESCPOSReceiptText(tab, orderNo, false);
@@ -1886,8 +1803,7 @@
         }
 
         function printKOT() {
-            let tabData = openTabs[activeTable];
-            let tab = (tabData && tabData.items) ? tabData.items : [];
+            let tabData = openTabs[activeTable]; let tab = (tabData && tabData.items) ? tabData.items : [];
             if (!tab || tab.length === 0) return showToast("Cart is empty!", "error");
             playSuccess();
             
@@ -1895,8 +1811,7 @@
             const overlay = document.getElementById('success-overlay');
             overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
 
-            document.getElementById('kot-table').innerText = activeTable;
-            document.getElementById('kot-date').innerText = new Date().toLocaleString();
+            document.getElementById('kot-table').innerText = activeTable; document.getElementById('kot-date').innerText = new Date().toLocaleString();
             document.getElementById('kot-items').innerHTML = tab.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font-weight:900; font-size:1.2em;">${i.qty}x</span><span style="flex-grow:1; margin-left:10px; font-weight:bold;">${i.name}</span></div>`).join('');
 
             let escposText = generateESCPOSReceiptText(tab, "KOT", true);
@@ -1904,8 +1819,7 @@
             setTimeout(() => {
                 executePrint('kot-print-area', () => {
                     overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
-                    showToast("KOT Sent to Kitchen", "success");
-                    notifyOS('Kitchen Alert', `New KOT sent for ${activeTable}`);
+                    showToast("KOT Sent to Kitchen", "success"); notifyOS('Kitchen Alert', `New KOT sent for ${activeTable}`);
                 }, escposText);
             }, 800);
         }
@@ -1915,22 +1829,16 @@
             if (!order) return showToast("Order not found in memory!", "error");
             
             playSuccess();
-            document.getElementById('reprint-date').innerText = order.dateObj;
-            document.getElementById('reprint-table').innerText = order.table;
-            document.getElementById('reprint-order-no').innerText = "ORDER " + (order.orderNo || '-');
+            document.getElementById('reprint-date').innerText = order.dateObj; document.getElementById('reprint-table').innerText = order.table; document.getElementById('reprint-order-no').innerText = "ORDER " + (order.orderNo || '-');
             
             let itemsHtml = '';
             if (order.rawItems && order.rawItems.length > 0) {
                 itemsHtml = order.rawItems.map(item => `
                     <div class="print-item-row flex justify-between text-xs mb-1 w-full font-bold text-black border-b border-dashed border-gray-300 pb-1">
-                        <span class="w-1/2 text-left pr-2" style="white-space: normal; word-wrap: break-word;">${item.name}</span>
-                        <span class="w-1/4 text-center">${item.qty}</span>
-                        <span class="w-1/4 text-right">${(item.price * item.qty).toLocaleString()}</span>
+                        <span class="w-1/2 text-left pr-2" style="white-space: normal; word-wrap: break-word;">${item.name}</span><span class="w-1/4 text-center">${item.qty}</span><span class="w-1/4 text-right">${(item.price * item.qty).toLocaleString()}</span>
                     </div>
                 `).join('');
-            } else {
-                itemsHtml = `<div class="text-xs font-bold w-full text-center">${order.items}</div>`;
-            }
+            } else { itemsHtml = `<div class="text-xs font-bold w-full text-center">${order.items}</div>`; }
             document.getElementById('reprint-items').innerHTML = itemsHtml;
             
             const sub = order.rawItems ? order.rawItems.reduce((sum, item) => sum + (item.price * item.qty), 0) : order.total;
@@ -1944,24 +1852,17 @@
             
             document.getElementById('reprint-totals').innerHTML = totalsHtml;
 
-            const overlay = document.getElementById('success-overlay');
-            document.getElementById('overlay-text').innerText = "REPRINTING..."; 
+            const overlay = document.getElementById('success-overlay'); document.getElementById('overlay-text').innerText = "REPRINTING..."; 
             overlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-110'); overlay.classList.add('opacity-100', 'scale-100');
             
             let escposText = generateESCPOSReceiptText(order.rawItems || [], order.orderNo, false);
             escposText = "    *** REPRINT ***\n" + escposText;
             
-            setTimeout(() => {
-                executePrint('reprint-area', () => {
-                    overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110');
-                    showToast("Receipt Reprinted Successfully!", "success");
-                }, escposText);
-            }, 500);
+            setTimeout(() => { executePrint('reprint-area', () => { overlay.classList.remove('opacity-100', 'scale-100'); overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-110'); showToast("Receipt Reprinted Successfully!", "success"); }, escposText); }, 500);
         }
 
         function renderQueue() {
-            const prepDiv = document.getElementById('queue-preparing');
-            const readyDiv = document.getElementById('queue-ready');
+            const prepDiv = document.getElementById('queue-preparing'); const readyDiv = document.getElementById('queue-ready');
             if(!prepDiv || !readyDiv) return;
 
             let prepHTML = ""; let readyHTML = "";
@@ -1970,10 +1871,7 @@
                 let card = `
                 <div class="bg-white/60 p-4 rounded-xl shadow border border-white/80 cursor-pointer hover:bg-white transition" onclick="toggleQueueStatus(${q.id})">
                     <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2">
-                            <span class="font-black text-2xl text-slate-800">${q.orderNo}</span>
-                            <span class="text-[10px] font-bold text-slate-500 bg-slate-200/70 px-2 py-1 rounded-md">${q.time || ''}</span>
-                        </div>
+                        <div class="flex items-center gap-2"><span class="font-black text-2xl text-slate-800">${q.orderNo}</span><span class="text-[10px] font-bold text-slate-500 bg-slate-200/70 px-2 py-1 rounded-md">${q.time || ''}</span></div>
                         <span class="text-xs font-bold text-sky-700 bg-sky-100 px-2 py-1 rounded-md">${q.table}</span>
                     </div>
                     <p class="text-sm text-slate-600 font-medium">${q.items}</p>
@@ -1997,15 +1895,10 @@
         async function clearQueue() { if(await customConfirm("Clear the entire visual queue?", "Reset Queue", "Clear All", "danger")) { queueList = []; renderQueue(); showToast("Queue Cleared", "info"); } }
 
         function renderDashboard() {
-            const nowMs = Date.now();
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayStart = today.getTime();
-            const weekStart = todayStart - (7 * 24 * 60 * 60 * 1000);
-            const monthStart = todayStart - (30 * 24 * 60 * 60 * 1000);
+            const nowMs = Date.now(); const today = new Date(); today.setHours(0, 0, 0, 0);
+            const todayStart = today.getTime(); const weekStart = todayStart - (7 * 24 * 60 * 60 * 1000); const monthStart = todayStart - (30 * 24 * 60 * 60 * 1000);
 
-            let revToday = 0, revWeek = 0, revMonth = 0;
-            let expToday = 0;
+            let revToday = 0, revWeek = 0, revMonth = 0; let expToday = 0;
             
             sales.forEach(order => {
                 let orderTime = order.timestamp || 0; 
@@ -2014,20 +1907,14 @@
                 if (orderTime >= monthStart) revMonth += order.total;
             });
             
-            expenses.forEach(exp => {
-                let expTime = exp.timestamp || 0;
-                if (expTime >= todayStart) expToday += exp.amount;
-            });
+            expenses.forEach(exp => { let expTime = exp.timestamp || 0; if (expTime >= todayStart) expToday += exp.amount; });
 
-            document.getElementById('dash-rev-today').innerText = revToday.toLocaleString();
-            document.getElementById('dash-rev-week').innerText = revWeek.toLocaleString();
-            document.getElementById('dash-rev-month').innerText = revMonth.toLocaleString();
-            document.getElementById('dash-exp-today').innerText = expToday.toLocaleString();
+            document.getElementById('dash-rev-today').innerText = revToday.toLocaleString(); document.getElementById('dash-rev-week').innerText = revWeek.toLocaleString();
+            document.getElementById('dash-rev-month').innerText = revMonth.toLocaleString(); document.getElementById('dash-exp-today').innerText = expToday.toLocaleString();
 
             updateSalesChart(); 
 
             const historyBody = document.getElementById('dash-history');
-            
             let combinedHistory = [];
             sales.forEach(s => combinedHistory.push({ type: 'Sale', time: s.time, dateObj: s.dateObj, timestamp: s.timestamp || 0, orderNo: s.orderNo, table: s.table, items: s.items, total: s.total }));
             expenses.forEach(e => combinedHistory.push({ type: 'Expense', time: e.time, dateObj: e.dateObj, timestamp: e.timestamp || 0, category: e.category, note: e.note, total: e.amount, user: e.user }));
@@ -2039,114 +1926,56 @@
             const recentHistory = combinedHistory.slice(-50).reverse();
             historyBody.innerHTML = recentHistory.map((item, i) => {
                 if(item.type === 'Sale') {
-                    return `
-                    <tr class="hover:bg-white/60 transition-colors duration-200 group">
-                        <td class="p-4 align-top whitespace-nowrap"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-black uppercase">SALE</span></td>
-                        <td class="p-4 align-top whitespace-nowrap"><div class="font-bold text-slate-800">${item.time}</div><div class="text-xs text-slate-500 font-medium mt-1">${item.dateObj.split(',')[0]}</div></td>
-                        <td class="p-4 align-top whitespace-nowrap"><div class="font-black text-sky-700">${item.orderNo || '-'}</div><div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${item.table}</div></td>
-                        <td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]"><p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${item.items}</p></td>
-                        <td class="p-4 align-top text-right whitespace-nowrap"><div class="font-black text-emerald-600 text-lg">+ ${item.total.toLocaleString()} Ks</div></td>
-                    </tr>`;
+                    return `<tr class="hover:bg-white/60 transition-colors duration-200 group"><td class="p-4 align-top whitespace-nowrap"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-black uppercase">SALE</span></td><td class="p-4 align-top whitespace-nowrap"><div class="font-bold text-slate-800">${item.time}</div><div class="text-xs text-slate-500 font-medium mt-1">${item.dateObj.split(',')[0]}</div></td><td class="p-4 align-top whitespace-nowrap"><div class="font-black text-sky-700">${item.orderNo || '-'}</div><div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${item.table}</div></td><td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]"><p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${item.items}</p></td><td class="p-4 align-top text-right whitespace-nowrap"><div class="font-black text-emerald-600 text-lg">+ ${item.total.toLocaleString()} Ks</div></td></tr>`;
                 } else {
-                    return `
-                    <tr class="hover:bg-red-50/60 transition-colors duration-200 group">
-                        <td class="p-4 align-top whitespace-nowrap"><span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-black uppercase">EXPENSE</span></td>
-                        <td class="p-4 align-top whitespace-nowrap"><div class="font-bold text-slate-800">${item.time}</div><div class="text-xs text-slate-500 font-medium mt-1">${item.dateObj.split(',')[0]}</div></td>
-                        <td class="p-4 align-top whitespace-nowrap"><div class="font-black text-red-700">${item.category}</div><div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${item.user}</div></td>
-                        <td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]"><p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${item.note}</p></td>
-                        <td class="p-4 align-top text-right whitespace-nowrap"><div class="font-black text-red-600 text-lg">- ${item.total.toLocaleString()} Ks</div></td>
-                    </tr>`;
+                    return `<tr class="hover:bg-red-50/60 transition-colors duration-200 group"><td class="p-4 align-top whitespace-nowrap"><span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-black uppercase">EXPENSE</span></td><td class="p-4 align-top whitespace-nowrap"><div class="font-bold text-slate-800">${item.time}</div><div class="text-xs text-slate-500 font-medium mt-1">${item.dateObj.split(',')[0]}</div></td><td class="p-4 align-top whitespace-nowrap"><div class="font-black text-red-700">${item.category}</div><div class="text-xs font-bold text-slate-500 bg-slate-200/50 inline-block px-2 py-1 rounded mt-1">${item.user}</div></td><td class="p-4 text-slate-600 text-sm align-top hidden md:table-cell max-w-[200px]"><p class="truncate group-hover:whitespace-normal group-hover:break-words transition-all">${item.note}</p></td><td class="p-4 align-top text-right whitespace-nowrap"><div class="font-black text-red-600 text-lg">- ${item.total.toLocaleString()} Ks</div></td></tr>`;
                 }
             }).join('');
         }
 
         function updateSalesChart() {
-            const ctx = document.getElementById('salesChart');
-            if(!ctx) return;
+            const ctx = document.getElementById('salesChart'); if(!ctx) return;
             if(salesChartInstance) salesChartInstance.destroy();
 
-            const labels = [];
-            const data = [];
+            const labels = []; const data = [];
             
             for(let i=6; i>=0; i--) {
-                let d = new Date();
-                d.setDate(d.getDate() - i);
-                d.setHours(0, 0, 0, 0);
-                let checkDayStart = d.getTime();
-                let checkDayEnd = checkDayStart + (24 * 60 * 60 * 1000);
+                let d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+                let checkDayStart = d.getTime(); let checkDayEnd = checkDayStart + (24 * 60 * 60 * 1000);
                 
                 labels.push(d.toLocaleDateString(undefined, {month:'short', day:'numeric'}));
-                
-                let dayTotal = sales.filter(s => {
-                    let t = s.timestamp || 0;
-                    return t >= checkDayStart && t < checkDayEnd;
-                }).reduce((sum, order) => sum + order.total, 0);
-                
+                let dayTotal = sales.filter(s => { let t = s.timestamp || 0; return t >= checkDayStart && t < checkDayEnd; }).reduce((sum, order) => sum + order.total, 0);
                 data.push(dayTotal);
             }
 
             salesChartInstance = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Daily Revenue (Ks)',
-                        data: data,
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }, 
-                    scales: { 
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.4)' } },
-                        x: { grid: { display: false } }
-                    } 
-                }
+                data: { labels: labels, datasets: [{ label: 'Daily Revenue (Ks)', data: data, borderColor: '#0ea5e9', backgroundColor: 'rgba(14, 165, 233, 0.2)', borderWidth: 3, fill: true, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.4)' } }, x: { grid: { display: false } } } }
             });
         }
 
         async function clearDashboard() {
-            if (currentUserRole !== 'god' && currentUserRole !== 'manager') {
-                return showToast("Access Denied. Manager or Owner required.", "error");
-            }
+            if (currentUserRole !== 'god' && currentUserRole !== 'manager') return showToast("Access Denied. Manager or Owner required.", "error");
             if (await customConfirm("Clear all sales and expense history? This cannot be undone.", "Clear Dashboard", "Yes, Clear Data", "danger")) {
-                sales = [];
-                expenses = [];
-                localStorage.setItem('tino_sales', JSON.stringify(sales));
-                localStorage.setItem('tino_expenses', JSON.stringify(expenses));
-                syncToCloud();
-                renderDashboard();
-                showToast("Dashboard Data Cleared", "success");
+                sales = []; expenses = []; localStorage.setItem('tino_sales', JSON.stringify(sales)); localStorage.setItem('tino_expenses', JSON.stringify(expenses)); syncToCloud(); renderDashboard(); showToast("Dashboard Data Cleared", "success");
             }
         }
         
         async function clearSalesHistory() { 
             if(await customConfirm("GOD MODE ACTION: Factory reset ALL sales history AND expenses? This cannot be undone.", "Factory Reset", "Yes, Reset All", "danger")) { 
                 sales = []; expenses = []; dailyTracker.count = 0; 
-                localStorage.setItem('tino_sales', JSON.stringify(sales));
-                localStorage.setItem('tino_expenses', JSON.stringify(expenses));
-                localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
-                syncToCloud(); renderDashboard(); 
-                showToast("System Factory Reset Complete", "info");
+                localStorage.setItem('tino_sales', JSON.stringify(sales)); localStorage.setItem('tino_expenses', JSON.stringify(expenses)); localStorage.setItem('tino_tracker', JSON.stringify(dailyTracker));
+                syncToCloud(); renderDashboard(); showToast("System Factory Reset Complete", "info");
             } 
         }
 
         function renderMenuManager() {
-            const q = (document.getElementById('menu-manager-search')?.value || "").toLowerCase();
-            let html = "";
+            const q = (document.getElementById('menu-manager-search')?.value || "").toLowerCase(); let html = "";
             menu.forEach((item, i) => {
                 if (q === "" || item.name.toLowerCase().includes(q) || (item.code&&item.code.toLowerCase().includes(q)) || item.cat.toLowerCase().includes(q)) {
                     const thumbnailHtml = item.img ? `<img src="${item.img}" class="w-16 h-16 rounded-xl object-cover shadow-md ml-4">` : '';
-                    html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-between transform transition hover:-translate-y-1 font-sans">
-                                <div class="mb-4"><div class="flex justify-between items-start mb-2"><span class="bg-sky-500/20 text-sky-700 text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">${item.cat} ${item.subcat?`> ${item.subcat}`:''}</span>${item.code?`<span class="text-xs font-mono text-slate-400 border border-slate-300 px-1 rounded">${item.code}</span>`:''}</div><div class="flex justify-between items-center mt-3"><div><h4 class="text-xl font-bold text-slate-800">${item.name}</h4><p class="text-sky-600 font-black text-lg mt-1">${item.price.toLocaleString()} Ks</p></div>${thumbnailHtml}</div></div>
-                                <div class="flex gap-2 border-t border-white/40 pt-4"><button type="button" onclick="editMenu(${i}); playClick()" class="flex-1 bg-white/50 text-slate-700 py-2 rounded-lg font-bold hover:bg-white transition active:scale-95">Edit</button><button type="button" onclick="deleteMenu(${i}); playClick()" class="flex-1 bg-red-500/20 text-red-600 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition active:scale-95">Delete</button></div>
-                             </div>`;
+                    html += `<div class="glass-panel p-6 rounded-2xl flex flex-col justify-between transform transition hover:-translate-y-1 font-sans"><div class="mb-4"><div class="flex justify-between items-start mb-2"><span class="bg-sky-500/20 text-sky-700 text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">${item.cat} ${item.subcat?`> ${item.subcat}`:''}</span>${item.code?`<span class="text-xs font-mono text-slate-400 border border-slate-300 px-1 rounded">${item.code}</span>`:''}</div><div class="flex justify-between items-center mt-3"><div><h4 class="text-xl font-bold text-slate-800">${item.name}</h4><p class="text-sky-600 font-black text-lg mt-1">${item.price.toLocaleString()} Ks</p></div>${thumbnailHtml}</div></div><div class="flex gap-2 border-t border-white/40 pt-4"><button type="button" onclick="editMenu(${i}); playClick()" class="flex-1 bg-white/50 text-slate-700 py-2 rounded-lg font-bold hover:bg-white transition active:scale-95">Edit</button><button type="button" onclick="deleteMenu(${i}); playClick()" class="flex-1 bg-red-500/20 text-red-600 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition active:scale-95">Delete</button></div></div>`;
                 }
             });
             document.getElementById('manager-menu-list').innerHTML = html || `<div class="col-span-full text-center text-slate-500 italic mt-10">No items found</div>`;
@@ -2165,11 +1994,7 @@
         
         function editMenu(index) { const i = menu[index]; document.getElementById('modal-title').innerText = "Edit Item"; document.getElementById('menu-name').value = i.name; document.getElementById('menu-price').value = i.price; document.getElementById('menu-code').value = i.code||''; document.getElementById('menu-cat').value = i.cat; document.getElementById('menu-subcat').value = i.subcat||''; document.getElementById('menu-img').value = i.img||''; document.getElementById('edit-index').value = index; document.getElementById('menu-modal').classList.remove('hidden'); }
         
-        async function deleteMenu(index) { 
-            if(await customConfirm(`Delete ${menu[index].name} from the menu?`, "Delete Item", "Delete", "danger")) { 
-                menu.splice(index, 1); renderMenuManager(); syncToCloud(); showToast("Item Deleted", "info"); 
-            } 
-        }
+        async function deleteMenu(index) { if(await customConfirm(`Delete ${menu[index].name} from the menu?`, "Delete Item", "Delete", "danger")) { menu.splice(index, 1); renderMenuManager(); syncToCloud(); showToast("Item Deleted", "info"); } }
 
         function exportToExcel() {
             if(sales.length === 0) return showToast("No data to export.", "error");
