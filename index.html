@@ -746,14 +746,30 @@
         let currentUserRole = 'guest';
         let currentUsername = 'Guest';
         
-        // Expanded config object to include new features
         let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false, rushMode: false, customFavicon: '🍔' };
         
-        let menu = JSON.parse(localStorage.getItem('tino_menu')) || [ 
+        // 🛠️ TINOKO: THE MASTER CLOUD OVERRIDE
+        let defaultMenu = [ 
             { name: "Ice Coffee", price: 2500, cat: "Drinks", code: "DRIN001", img: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400" },
             { name: "Croissant", price: 1500, cat: "Bakery", code: "BAKE001", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400" },
             { name: "Chocolate Cake", price: 15000, cat: "Cakes", code: "CAKE001", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400" }
+            
+            // 🟢 PASTE YOUR LOTS OF ITEMS HERE! (DO NOT REMOVE THE COMMAS BETWEEN THEM)
         ];
+
+        let menu = defaultMenu; 
+        
+        // This forces Firebase to accept your new code list as the absolute boss!
+        window.addEventListener('firebase-ready', () => {
+            setTimeout(() => {
+                menu = defaultMenu; // Reset it just in case Firebase tried to delete it
+                localStorage.setItem('tino_menu', JSON.stringify(menu));
+                if (typeof syncToCloud === 'function') syncToCloud(); // 🚀 FORCE UPLOAD TO CLOUD
+                if (typeof renderMenuManager === 'function') renderMenuManager();
+                if (typeof renderPOSMenu === 'function') renderPOSMenu();
+                showToast("Menu Uploaded to Cloud!", "success");
+            }, 3000);
+        });
         
         let tables = JSON.parse(localStorage.getItem('tino_tables')) || ['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Takeaway'];
         let sales = JSON.parse(localStorage.getItem('tino_sales')) || [];
@@ -1006,8 +1022,6 @@
                 openTabs[t] = { items: openTabs[t], startTime: Date.now() };
             }
         }
-
-        window.addEventListener('firebase-ready', () => { console.log("🔥 Firebase initialized."); });
 
         window.addEventListener('beforeunload', (e) => {
             const hasUnsaved = Object.values(openTabs).some(t => t.items && t.items.length > 0);
