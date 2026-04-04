@@ -6,29 +6,36 @@
     "customBg": "",
     "customCursor": "",
     "customFont": "",
-    "useWebUSB": false
+    "useWebUSB": false,
+    "rushMode": false,
+    "customFavicon": "⚡",
+    "restaurantName": "ELITE CYBER POS",
+    "asciiLogo": ""
   },
   "menu": [
     {
-      "name": "Ice Coffee",
+      "name": "Neon Cyber Cola",
       "price": 2500,
       "cat": "Drinks",
-      "code": "DC01",
-      "img": "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400"
+      "code": "DRIN001",
+      "img": "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400",
+      "subcat": "Cold"
     },
     {
-      "name": "Croissant",
+      "name": "Holo Croissant",
       "price": 1500,
       "cat": "Bakery",
-      "code": "BK01",
-      "img": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400"
+      "code": "BAKE001",
+      "img": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400",
+      "subcat": "Pastry"
     },
     {
-      "name": "Chocolate Cake",
+      "name": "Quantum Cake",
       "price": 15000,
       "cat": "Cakes",
-      "code": "CK01",
-      "img": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400"
+      "code": "CAKE001",
+      "img": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400",
+      "subcat": "Whole"
     }
   ],
   "tables": [
@@ -42,8 +49,10 @@
   "tabs": {},
   "queue": [],
   "tracker": {
-    "date": "3/18/2026",
+    "date": "4/4/2026",
     "count": 0
   },
-  "shifts": []
+  "shifts": [],
+  "expenses": [],
+  "notes": []
 }
