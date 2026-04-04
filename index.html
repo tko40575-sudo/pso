@@ -770,28 +770,14 @@
         
         let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false, rushMode: false, customFavicon: '⚡', restaurantName: 'ELITE CYBER POS', asciiLogo: '' };
         
-        // 🛠️ TINOKO: THE MASTER CLOUD OVERRIDE
-        let defaultMenu = [ 
-            { name: "Neon Cyber Cola", price: 2500, cat: "Drinks", code: "DRIN001", img: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=400" },
-            { name: "Holo Croissant", price: 1500, cat: "Bakery", code: "BAKE001", img: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=400" },
-            { name: "Quantum Cake", price: 15000, cat: "Cakes", code: "CAKE001", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=400" }
-            
-            // 🟢 PASTE YOUR LOTS OF ITEMS HERE! (DO NOT REMOVE THE COMMAS BETWEEN THEM)
-        ];
-
-        let menu = defaultMenu; 
+        // Load menu normally from local storage
+        let menu = JSON.parse(localStorage.getItem('tino_menu'));
         
-        // This forces Firebase to accept your new code list as the absolute boss!
-        window.addEventListener('firebase-ready', () => {
-            setTimeout(() => {
-                menu = defaultMenu; // Reset it just in case Firebase tried to delete it
-                localStorage.setItem('tino_menu', JSON.stringify(menu));
-                if (typeof syncToCloud === 'function') syncToCloud(); // 🚀 FORCE UPLOAD TO CLOUD
-                if (typeof renderMenuManager === 'function') renderMenuManager();
-                if (typeof renderPOSMenu === 'function') renderPOSMenu();
-                showToast("Menu Uploaded to Cloud!", "success");
-            }, 3000);
-        });
+        // If there is no menu saved locally at all, start with a blank slate
+        if (!menu) {
+            menu = []; 
+            localStorage.setItem('tino_menu', JSON.stringify(menu));
+        }
         
         let tables = JSON.parse(localStorage.getItem('tino_tables')) || ['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Takeaway'];
         let sales = JSON.parse(localStorage.getItem('tino_sales')) || [];
