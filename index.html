@@ -409,7 +409,7 @@
                 <button type="button" id="close-mobile-cart" onclick="toggleMobileCart()" class="hidden absolute top-4 right-4 bg-slate-200 text-slate-800 w-10 h-10 rounded-full font-bold text-xl active:scale-90 transition shadow-md">×</button>
                 
                 <div class="text-center pb-4 mb-4 border-b border-slate-400 print:border-b print:border-dashed print:border-black mt-4 lg:mt-0" style="font-family: 'Courier New', Courier, monospace;">
-                    <h2 class="font-black text-2xl text-slate-900 tracking-tighter uppercase mb-1">ELITE CYBER POS</h2>
+                    <h2 id="receipt-restaurant-name" class="font-black text-2xl text-slate-900 tracking-tighter uppercase mb-1">ELITE CYBER POS</h2>
                     <p class="text-xs text-slate-800 font-bold">Nay Pyi Taw, Pyinmana</p>
                     <p class="text-[11px] text-slate-800 mt-2 font-semibold">Tel: 09-43158093</p>
                     <div class="mt-3 pt-2 border-t border-slate-400 print:border-t print:border-dashed print:border-black flex flex-col justify-center items-center">
@@ -660,6 +660,22 @@
                         <h4 class="font-bold text-white text-base">Promotion Text</h4>
                         <input type="text" id="config-promo" class="w-48 py-2 px-4 bg-slate-950 border border-sky-500/40 rounded-xl outline-none text-center font-bold text-sky-300 shadow-inner focus:border-sky-400">
                     </div>
+                    
+                    <div class="flex justify-between items-center bg-slate-900/60 p-5 rounded-2xl border border-sky-500/20">
+                        <div>
+                            <h4 class="font-bold text-white text-base">Restaurant Name</h4>
+                            <p class="text-xs text-sky-300 mt-1">Updates the UI and printed receipts.</p>
+                        </div>
+                        <input type="text" id="config-rest-name" placeholder="ELITE CYBER POS" class="w-56 py-2 px-4 bg-slate-950 border border-sky-500/40 rounded-xl outline-none text-sm font-bold text-white shadow-inner focus:border-sky-400">
+                    </div>
+
+                    <div class="flex flex-col bg-slate-900/60 p-5 rounded-2xl border border-sky-500/20 gap-3">
+                        <div>
+                            <h4 class="font-bold text-white text-base">Custom ASCII Art Logo</h4>
+                            <p class="text-xs text-sky-300 mt-1">Paste plain-text ASCII art here for WebUSB hardware printing.</p>
+                        </div>
+                        <textarea id="config-ascii" rows="4" class="w-full py-2 px-4 bg-slate-950 border border-sky-500/40 rounded-xl outline-none text-xs font-mono text-white shadow-inner focus:border-sky-400" placeholder="  ___ _    ___ _____ ___\n | __| |  |_ _|_   _| __|\n | _|| |__ | |  | | | _| \n |___|____|___| |_| |___|"></textarea>
+                    </div>
 
                     <div class="flex justify-between items-center bg-emerald-950/40 p-5 rounded-2xl border border-emerald-500/30">
                         <div>
@@ -730,7 +746,7 @@
 
         <div id="reprint-area" class="hidden" style="background:white; color:black; font-family:'Courier New', monospace; padding:20px; width:100%; max-width:80mm; text-shadow:none; box-shadow:none;">
             <div class="text-center pb-4 mb-4 border-b border-dashed border-black">
-                <h2 class="font-black text-2xl tracking-tighter uppercase mb-1">ELITE CYBER POS</h2>
+                <h2 id="reprint-restaurant-name" class="font-black text-2xl tracking-tighter uppercase mb-1">ELITE CYBER POS</h2>
                 <p class="text-xs font-bold">Nay Pyi Taw, Pyinmana</p>
                 <div class="mt-3 pt-2 border-t border-dashed border-black flex flex-col justify-center items-center">
                     <p class="text-xs font-bold" id="reprint-date"></p>
@@ -752,7 +768,7 @@
         let currentUserRole = 'guest';
         let currentUsername = 'Guest';
         
-        let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false, rushMode: false, customFavicon: '⚡' };
+        let appConfig = JSON.parse(localStorage.getItem('tino_config')) || { tax: 5, discount: 0, promo: '', customBg: '', customCursor: '', customFont: '', useWebUSB: false, rushMode: false, customFavicon: '⚡', restaurantName: 'ELITE CYBER POS', asciiLogo: '' };
         
         // 🛠️ TINOKO: THE MASTER CLOUD OVERRIDE
         let defaultMenu = [ 
@@ -816,6 +832,15 @@
         };
         
         let currentLang = localStorage.getItem('tino_lang') || 'en';
+
+        // --- NEW: RESTAURANT NAME / BRANDING ---
+        function updateReceiptBranding() {
+            const name = appConfig.restaurantName || 'ELITE CYBER POS';
+            const r1 = document.getElementById('receipt-restaurant-name');
+            const r2 = document.getElementById('reprint-restaurant-name');
+            if(r1) r1.innerText = name;
+            if(r2) r2.innerText = name;
+        }
 
         // --- NEW: FAVICON LOGIC ---
         function updateFavicon(iconVal) {
@@ -1358,6 +1383,7 @@
             applyCustomStyling(); loadSettingsUI(); updateLang(); 
             
             // Apply New Features from Settings
+            updateReceiptBranding();
             updateFavicon(appConfig.customFavicon || '⚡');
             toggleRushMode(appConfig.rushMode, false);
 
@@ -1531,6 +1557,8 @@
             // New Setting Loaders
             document.getElementById('config-rush').checked = appConfig.rushMode || false;
             document.getElementById('config-favicon').value = appConfig.customFavicon || '⚡';
+            document.getElementById('config-rest-name').value = appConfig.restaurantName || 'ELITE CYBER POS';
+            document.getElementById('config-ascii').value = appConfig.asciiLogo || '';
         }
 
         function saveSettings() {
@@ -1546,6 +1574,10 @@
             const newFavicon = document.getElementById('config-favicon').value || '⚡';
             appConfig.customFavicon = newFavicon;
             updateFavicon(newFavicon);
+
+            appConfig.restaurantName = document.getElementById('config-rest-name').value.trim() || 'ELITE CYBER POS';
+            appConfig.asciiLogo = document.getElementById('config-ascii').value;
+            updateReceiptBranding();
 
             localStorage.setItem('tino_config', JSON.stringify(appConfig));
             applyCustomStyling(); loadSettingsUI(); renderCart(); syncToCloud();
@@ -1699,7 +1731,16 @@
         }
 
         function generateESCPOSReceiptText(tab, orderNo, isKOT = false) {
-            let txt = "     ELITE CYBER POS\n    Nay Pyi Taw, Pyinmana\n--------------------------------\n";
+            let txt = "";
+            if (appConfig.asciiLogo && !isKOT) {
+                txt += appConfig.asciiLogo + "\n\n";
+            }
+            
+            let restName = appConfig.restaurantName || "ELITE CYBER POS";
+            let padding = Math.max(0, Math.floor((32 - restName.length) / 2));
+            txt += " ".repeat(padding) + restName + "\n";
+            txt += "    Nay Pyi Taw, Pyinmana\n--------------------------------\n";
+            
             if (isKOT) txt += "        *** KITCHEN ORDER ***\n";
             txt += "Date: " + new Date().toLocaleString() + "\nTable: " + activeTable + "\nOrder: " + orderNo + "\n--------------------------------\n";
             tab.forEach(i => {
